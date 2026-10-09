@@ -132,6 +132,8 @@ Acceptance: concurrent redemption, changed content, policy updates, replay, rest
 
 ## Milestone 4: isolation and egress
 
+Relay follow-up: Actions run #2 passed Linux/Windows builds and check jobs; isolation failed on its first relay request. Added worker-origin readiness (backend 401 without credentials/effects), streamed/persisted worker output and safe relay/firewall diagnostics captured before cleanup, with failed-run CI artifact retention. Full isolation acceptance remains pending a rerun.
+
 9 October 2026 CI follow-up: corrected the DNS probe to accept explicit socket access denial during send/receive and apply cancellation to send. Worker Release build passes locally. Supplied runner evidence covers startup positive controls only; full container acceptance awaits a passing rerun.
 
 Deploy the worker separately with private per-run storage, non-root identity, read-only root filesystem, dropped capabilities and CPU/memory limits. Do not mount host sockets, broad secrets or writable shared caches. Restore dependencies separately from runtime.

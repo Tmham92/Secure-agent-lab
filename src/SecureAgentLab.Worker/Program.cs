@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using SecureAgentLab.Core;
 using SecureAgentLab.Transport;
 
+if (args.Contains("--relay-readiness")) { await IsolationChecks.WaitForRelay(); return 0; }
 if (args.Contains("--isolation-checks")) await IsolationChecks.Run();
 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OPENAI_API_KEY")))
 { Console.Error.WriteLine("worker_secret_configuration_rejected"); return 1; }

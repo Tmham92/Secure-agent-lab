@@ -7,6 +7,28 @@ using SecureAgentLab.Transport;
 // Adversarial probes: these intentionally bypass the proposal client and policy gateway.
 internal static class IsolationChecks
 {
+    internal static async Task WaitForRelay()
+    {
+        // Probe from the worker UID/network path. A gateway-side check cannot prove this path.
+        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false })
+            { BaseAddress = new Uri("http://127.0.0.1:8080"), Timeout = TimeSpan.FromSeconds(1) };
+        for (var attempt = 1; attempt <= 10; attempt++)
+        {
+            try
+            {
+                // No credential: 401 proves the relay reached the authenticated backend without a tool effect.
+                using var response = await client.PostAsJsonAsync("/worker/proposals",
+                    new ExecuteRequest(new Proposal(Operation.ReadDocument, "documents/task")));
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                { Console.WriteLine("PASS worker-to-relay-to-gateway readiness (401)"); return; }
+                Console.WriteLine($"Relay readiness attempt {attempt}: HTTP {(int)response.StatusCode}");
+            }
+            catch (Exception e) when (e is HttpRequestException or OperationCanceledException)
+            { Console.WriteLine($"Relay readiness attempt {attempt}: {e.GetType().Name}"); }
+            await Task.Delay(100);
+        }
+        throw new InvalidOperationException("Worker-to-relay readiness failed: expected unauthenticated backend HTTP 401. Inspect isolation diagnostics.");
+    }
     internal static async Task Run()
     {
         if (!OperatingSystem.IsLinux()) throw new InvalidOperationException("Container checks require Linux.");
@@ -47,7 +69,7 @@ internal static class IsolationChecks
             { Console.WriteLine("PASS direct DNS blocked by socket permission denial"); }
             catch (OperationCanceledException) { Console.WriteLine("PASS direct DNS blocked"); }
         }
-        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = new Uri("http://127.0.0.1:8080"), Timeout = TimeSpan.FromSeconds(5) };
+        using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false, UseProxy = false }) { BaseAddress = new Uri("http://127.0.0.1:8080"), Timeout = TimeSpan.FromSeconds(5) };
         foreach (var route in new[] { "/operator/audit", "/operator/runs", "/worker/proposals?destination=http://169.254.169.254", "/worker/../operator/audit", "/worker/%2e%2e/operator/audit" })
         {
             using var response = await client.GetAsync(route);

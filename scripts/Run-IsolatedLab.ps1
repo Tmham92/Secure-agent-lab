@@ -10,10 +10,36 @@ $names = @('LAB_ISOLATION_SIGNING_KEY','LAB_ISOLATION_FIXTURE','LAB_WORKER_CREDE
 $saved = @{}
 foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
 function Invoke-Compose {
-    param([string[]]$Arguments)
+    param([string[]]$Arguments, [string]$LogFile)
+    if ($LogFile) {
+        & docker compose -p $project -f $compose @Arguments 2>&1 | Tee-Object -FilePath $LogFile | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw "Docker Compose failed: $($Arguments[0]); see $LogFile" }
+        return
+    }
     $result = & docker compose -p $project -f $compose @Arguments
     if ($LASTEXITCODE -ne 0) { throw "Docker Compose failed: $($Arguments[0])" }
     return $result
+}
+function Save-IsolationDiagnostics {
+    # Never dump compose config, inspect environment or issuer output: those contain credentials.
+    if (!(Test-Path -LiteralPath $fixture)) { return }
+    $commands = @(
+        @{ Name = 'services'; Args = @('ps','--all') },
+        @{ Name = 'relay'; Args = @('logs','--no-color','--tail','150','relay') },
+        @{ Name = 'relay-identity'; Args = @('exec','-T','relay','id') },
+        @{ Name = 'relay-config-check'; Args = @('exec','-T','relay','nginx','-t') },
+        @{ Name = 'ipv4-firewall'; Args = @('exec','-T','boundary','iptables','-nvL','OUTPUT','--line-numbers') },
+        @{ Name = 'ipv6-firewall'; Args = @('exec','-T','boundary','ip6tables','-nvL','OUTPUT','--line-numbers') }
+    )
+    foreach ($command in $commands) {
+        try {
+            Write-Host "Isolation diagnostics: $($command.Name)"
+            $arguments = $command.Args
+            & docker compose -p $project -f $compose @arguments 2>&1 |
+                Tee-Object -FilePath (Join-Path $fixture "diagnostics-$($command.Name).txt") | Out-Host
+        }
+        catch { Write-Warning "Could not collect $($command.Name) diagnostics." }
+    }
 }
 try {
     & docker info --format '{{.OSType}}' | Out-Null
@@ -37,10 +63,11 @@ try {
     if ($null -eq $run) { throw 'Gateway or positive controls did not become ready.' }
     Write-Host 'Positive controls passed: gateway IPv4/IPv6 and protected storage exist.'
     $env:LAB_WORKER_CREDENTIAL = $run.workerCredential
+    Invoke-Compose -Arguments @('run','--no-deps','--name',"$project-readiness",'worker','--relay-readiness') -LogFile (Join-Path $fixture 'worker-readiness.log')
     # Two distinct containers demonstrate that scratch from the first run is unavailable in the second.
     foreach ($number in 1,2) {
         $workerName = "$project-worker-$number"
-        Invoke-Compose -Arguments @('run','--no-deps','--name',$workerName,'worker','--isolation-checks') | Out-Host
+        Invoke-Compose -Arguments @('run','--no-deps','--name',$workerName,'worker','--isolation-checks') -LogFile (Join-Path $fixture "worker-$number.log")
         $details = (& docker inspect $workerName | ConvertFrom-Json)[0]
         if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect worker container.' }
         $hostConfig = $details.HostConfig
@@ -62,9 +89,14 @@ try {
     Write-Host 'Mock effects: 2 reads, 0 publications; protected canary unchanged.'
     Write-Host 'Isolation demo complete. Both workers passed bypass checks and authorized proposals.'
 }
+catch {
+    Save-IsolationDiagnostics
+    throw
+}
 finally {
     # No compose config/inspect output is printed: gateway configuration contains its ephemeral signing key.
     & docker compose -p $project -f $compose down --volumes --remove-orphans 2>$null | Out-Null
     foreach ($number in 1,2) { & docker rm -f "$project-worker-$number" 2>$null | Out-Null }
+    & docker rm -f "$project-readiness" 2>$null | Out-Null
     foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $saved[$name]) }
 }

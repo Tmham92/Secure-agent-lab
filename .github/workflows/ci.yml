@@ -25,6 +25,16 @@ jobs:
       - name: Container isolation and independent bypass checks
         shell: pwsh
         run: ./scripts/Run-IsolatedLab.ps1
+      - name: Preserve isolation diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolation-diagnostics
+          path: |
+            artifacts/isolation/**/worker-*.log
+            artifacts/isolation/**/diagnostics-*.txt
+          if-no-files-found: ignore
+          retention-days: 7
   windows-documents:
     runs-on: windows-latest
     steps:

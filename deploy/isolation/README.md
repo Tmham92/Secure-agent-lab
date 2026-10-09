@@ -46,6 +46,16 @@ Adding a provider requires a separate narrow broker and new network/redirect/DNS
 
 ## Evidence
 
+Before the bypass scenarios, a separate restricted worker runs `--relay-readiness`:
+an unauthenticated POST through the relay must return backend 401 within ten bounded
+attempts. This proves the permitted worker/relay/backend path without adding tool effects.
+On failure, worker console output is retained in `artifacts/isolation/<project>/worker-*.log`.
+Before deleting containers, the launcher saves service status, relay logs/identity/config
+validation and IPv4/IPv6 firewall counters as `diagnostics-*.txt`. It never dumps full
+container environment/inspection or issuer credentials. Failed CI jobs upload only these
+diagnostic files as `isolation-diagnostics` for seven days. Actions run #2 passed Linux
+and Windows checks, but timed out on relay HTTP; full isolation acceptance remains pending.
+
 The operator confirms the backend is alive on **both IPv4 and IPv6** and that a protected
 other-run storage canary exists. The worker then bypasses its normal client with direct
 sockets: both backend listeners, metadata, private ranges and documentation-only external IPv4/IPv6 addresses must
