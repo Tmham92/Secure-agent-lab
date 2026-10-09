@@ -132,6 +132,10 @@ Acceptance: concurrent redemption, changed content, policy updates, replay, rest
 
 ## Milestone 4: isolation and egress
 
+CONNECT probe correction: the next local run verified relay startup/readiness and preceding bypass checks. Added the explicit synthetic Host authority required by .NET so CONNECT denial is measured at the relay rather than failing during client construction. Final two-worker/effect acceptance remains pending.
+
+Confirmed startup correction: local relay logs showed a read-only-filesystem error creating the default FastCGI temp directory. Explicit FastCGI/uWSGI/SCGI temp paths now use the relay's existing bounded `/tmp` mount without relaxing isolation. Full runtime acceptance requires rerunning the container demo.
+
 Relay follow-up: Actions run #2 passed Linux/Windows builds and check jobs; isolation failed on its first relay request. Added worker-origin readiness (backend 401 without credentials/effects), streamed/persisted worker output and safe relay/firewall diagnostics captured before cleanup, with failed-run CI artifact retention. Full isolation acceptance remains pending a rerun.
 
 9 October 2026 CI follow-up: corrected the DNS probe to accept explicit socket access denial during send/receive and apply cancellation to send. Worker Release build passes locally. Supplied runner evidence covers startup positive controls only; full container acceptance awaits a passing rerun.

@@ -186,6 +186,10 @@ Worker output streams to the console and `worker-readiness.log` / `worker-1.log`
 
 Local verification of this follow-up: Worker Release build passed with zero warnings/errors; PowerShell syntax parsed; an actual worker process against a synthetic loopback HTTP fixture retried 503 and succeeded on 401; a mocked Compose failure preserved worker output, saved safe relay diagnostics before cleanup and retained the original failure. These checks validate the new readiness/diagnostic behavior without claiming that the actual container relay path is fixed.
 
+Confirmed relay startup failure from local run `securelab-b987cf7c3d24`: Nginx exited while creating `/var/cache/nginx/fastcgi_temp` on its read-only root filesystem. The worker's ten readiness timeouts were a consequence of the exited relay. Configuration now directs FastCGI, uWSGI and SCGI temporary paths into the existing bounded `/tmp` tmpfs, alongside body/proxy temp paths and the PID file. The relay retains its non-root UID, read-only root, dropped capabilities and fixed-route firewall constraints. Rerun `./scripts/Run-IsolatedLab.ps1` to verify readiness and the complete bypass/effect checks after the change.
+
+Local run `securelab-399b216c8046` then verified relay startup/configuration, worker-path readiness, filesystem/capability restrictions, direct TCP/DNS denials, restricted routes and fixed upstream behavior. It stopped at a malformed CONNECT test request: .NET required an explicit Host authority before sending it. The probe now sets `Host: synthetic.invalid:443` while connecting only to the fixed local relay. It must receive HTTP 400, 403 or 405; a client-side exception is not proof of relay enforcement. Full acceptance still requires both workers, deployment inspection and final two-read/zero-publication assertions to complete.
+
 ## 7. Phases 5 and 6: real reads and hostile model proposals
 
 ### Phase 5: bounded file-backed document tool

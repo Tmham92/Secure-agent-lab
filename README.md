@@ -6,6 +6,10 @@ Isolation CI follow-up (9 October 2026): the DNS probe now handles explicit sock
 
 Actions run #2 passed the Linux and Windows check jobs, but isolation then timed out on the relay path. The launcher now checks readiness from the restricted worker, preserves worker output and collects safe relay/firewall diagnostics before cleanup. Failed CI runs upload `isolation-diagnostics`; see DEMO_GUIDE.md for the evidence and remaining acceptance.
 
+Local diagnostics confirmed that Nginx exited when creating its default FastCGI temporary directory on the read-only root. All module temporary paths now use the existing `/tmp` tmpfs; full isolation must be rerun to verify the correction.
+
+The subsequent local run passed relay readiness and the earlier bypass checks, then exposed a malformed CONNECT probe. The probe now supplies an explicit synthetic Host authority so the relay can reject the actual request; complete isolation acceptance remains pending.
+
 A learning project for a .NET developer who wants to deploy their own AI agents safely. The agent proposes work; a host-owned gateway decides which actions can execute. Start with deterministic proposals, understand the trust boundary, then add a model and real infrastructure one control at a time.
 
 Milestones 1–3 and 5 have a dependency-free .NET 10 implementation: the original offline lab plus a separate authenticated ASP.NET Core gateway and deterministic worker, immutable task grants, durable exact-content approval, a separate signed audit collector, a bounded file-backed synthetic document adapter, executable security checks and GitHub Actions. Milestone 4 adds a container isolation deployment with runtime verification still pending. README.md and plan.md retain the design and the roadmap for later milestones. No model account, API key, cloud subscription or live target is required. .NET 10 is an LTS release; see [Microsoft's overview](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/overview).

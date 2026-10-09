@@ -85,6 +85,9 @@ internal static class IsolationChecks
         using var fixedDestination = await client.SendAsync(hostSpoof);
         Require(fixedDestination.StatusCode == HttpStatusCode.Unauthorized, "Host cannot select a different upstream");
         using var tunnel = new HttpRequestMessage(new HttpMethod("CONNECT"), "/worker/proposals");
+        // HttpClient requires an explicit authority for CONNECT. The connection stays on the relay;
+        // this reserved synthetic destination is only the requested tunnel target.
+        tunnel.Headers.Host = "synthetic.invalid:443";
         using var tunnelDenied = await client.SendAsync(tunnel);
         Require(tunnelDenied.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.BadRequest or HttpStatusCode.MethodNotAllowed, "no CONNECT tunnel");
         Console.WriteLine("Isolation probes passed; running authorized proposal scenario next.");

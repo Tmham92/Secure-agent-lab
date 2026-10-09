@@ -46,6 +46,11 @@ Adding a provider requires a separate narrow broker and new network/redirect/DNS
 
 ## Evidence
 
+The relay keeps all Nginx temporary paths (body, proxy, FastCGI, uWSGI and SCGI)
+and its PID file in its existing bounded `/tmp` tmpfs. Nginx initializes even unused
+module temp paths on startup; leaving their defaults under `/var/cache/nginx` caused
+the read-only-root startup failure captured in `securelab-b987cf7c3d24` diagnostics.
+
 Before the bypass scenarios, a separate restricted worker runs `--relay-readiness`:
 an unauthenticated POST through the relay must return backend 401 within ten bounded
 attempts. This proves the permitted worker/relay/backend path without adding tool effects.
