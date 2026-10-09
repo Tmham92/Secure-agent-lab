@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../SecureAgentLab.Transport/SecureAgentLab.Transport.csproj" /></ItemGroup>
+</Project>

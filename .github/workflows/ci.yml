@@ -1,0 +1,41 @@
+name: Secure agent lab checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build SecureAgentLab.slnx --configuration Release
+      - run: dotnet run --project tests/SecureAgentLab.Checks --configuration Release --no-build
+      - run: dotnet run --project src/SecureAgentLab.Demo --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.TransportChecks --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.DurableChecks --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.DurableChecks --configuration Release --no-build -- --phase7
+      - run: dotnet run --project tests/SecureAgentLab.DocumentChecks --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.ModelChecks --configuration Release --no-build
+  isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Container isolation and independent bypass checks
+        shell: pwsh
+        run: ./scripts/Run-IsolatedLab.ps1
+  windows-documents:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build SecureAgentLab.slnx --configuration Release
+      - shell: pwsh
+        run: ./scripts/Run-ResponseDrill.ps1
+      - run: dotnet run --project tests/SecureAgentLab.DocumentChecks --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.ModelChecks --configuration Release --no-build
+      - shell: pwsh
+        run: ./scripts/Run-ModelLab.ps1

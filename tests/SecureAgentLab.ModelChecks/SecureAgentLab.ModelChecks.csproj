@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/SecureAgentLab.ModelHost/SecureAgentLab.ModelHost.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/SecureAgentLab.Durable/SecureAgentLab.Durable.csproj" /></ItemGroup>
+</Project>

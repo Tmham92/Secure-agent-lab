@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../../src/SecureAgentLab.Api/SecureAgentLab.Api.csproj" />
+    <ProjectReference Include="../../src/SecureAgentLab.AuditCollector/SecureAgentLab.AuditCollector.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SecureAgentLab.ModelHost/SecureAgentLab.ModelHost.csproj" />
+    <Project Path="src/SecureAgentLab.Durable/SecureAgentLab.Durable.csproj" />
+    <Project Path="src/SecureAgentLab.AuditCollector/SecureAgentLab.AuditCollector.csproj" />
+    <Project Path="src/SecureAgentLab.Transport/SecureAgentLab.Transport.csproj" />
+    <Project Path="src/SecureAgentLab.Api/SecureAgentLab.Api.csproj" />
+    <Project Path="src/SecureAgentLab.Worker/SecureAgentLab.Worker.csproj" />
+    <Project Path="src/SecureAgentLab.Operator/SecureAgentLab.Operator.csproj" />
+    <Project Path="src/SecureAgentLab.Core/SecureAgentLab.Core.csproj" />
+    <Project Path="src/SecureAgentLab.Demo/SecureAgentLab.Demo.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SecureAgentLab.ModelChecks/SecureAgentLab.ModelChecks.csproj" />
+    <Project Path="tests/SecureAgentLab.DocumentChecks/SecureAgentLab.DocumentChecks.csproj" />
+    <Project Path="tests/SecureAgentLab.DurableChecks/SecureAgentLab.DurableChecks.csproj" />
+    <Project Path="tests/SecureAgentLab.TransportChecks/SecureAgentLab.TransportChecks.csproj" />
+    <Project Path="tests/SecureAgentLab.Checks/SecureAgentLab.Checks.csproj" />
+  </Folder>
+</Solution>

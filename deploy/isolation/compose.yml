@@ -1,0 +1,87 @@
+services:
+  boundary:
+    build:
+      context: ../..
+      dockerfile: deploy/isolation/Boundary.Dockerfile
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/ready:size=1m,mode=0755"]
+    networks: [sealed]
+    pids_limit: 8
+    mem_limit: 32m
+    cpus: 0.25
+    healthcheck:
+      test: [CMD, test, -f, /ready/installed]
+      interval: 1s
+      timeout: 1s
+      retries: 20
+  gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/isolation/Dockerfile
+      target: gateway
+    network_mode: service:boundary
+    depends_on:
+      boundary: {condition: service_healthy}
+    user: "1656:1656"
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=16m,mode=1777"]
+    volumes:
+      - type: bind
+        source: ${LAB_ISOLATION_FIXTURE:?script creates a protected fixture}
+        target: /protected
+        read_only: true
+    environment:
+      ASPNETCORE_URLS: http://127.0.0.1:5188;http://[::1]:5188
+      Lab__Issuer: isolation-host
+      Lab__Audience: isolation-gateway
+      Lab__SigningKey: ${LAB_ISOLATION_SIGNING_KEY:?script generates host-only key}
+      Lab__AllowLoopbackHttp: "true"
+      Lab__UseInMemory: "true"
+      Lab__DocumentRoot: /protected/documents
+    pids_limit: 64
+    mem_limit: 192m
+    cpus: 1
+  relay:
+    image: nginx:1.28-alpine
+    network_mode: service:boundary
+    depends_on:
+      boundary: {condition: service_healthy}
+    user: "1655:1655"
+    entrypoint: [nginx, -g, "daemon off;"]
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=8m,mode=1777"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    pids_limit: 16
+    mem_limit: 32m
+    cpus: 0.25
+  worker:
+    build:
+      context: ../..
+      dockerfile: deploy/isolation/Dockerfile
+      target: worker
+    network_mode: service:boundary
+    depends_on:
+      boundary: {condition: service_healthy}
+    user: "1654:1654"
+    cap_drop: [ALL]
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:size=8m,mode=1777", "/workspace:size=8m,mode=0700,uid=1654,gid=1654"]
+    environment:
+      LAB_GATEWAY_URL: http://127.0.0.1:8080
+      LAB_ALLOW_LOOPBACK_HTTP: "true"
+      LAB_WORKER_CREDENTIAL: ${LAB_WORKER_CREDENTIAL:-}
+    pids_limit: 32
+    mem_limit: 128m
+    cpus: 0.5
+networks:
+  sealed:
+    internal: true
