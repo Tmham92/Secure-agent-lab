@@ -18,6 +18,51 @@ jobs:
       - run: dotnet run --project tests/SecureAgentLab.DurableChecks --configuration Release --no-build -- --phase7
       - run: dotnet run --project tests/SecureAgentLab.DocumentChecks --configuration Release --no-build
       - run: dotnet run --project tests/SecureAgentLab.ModelChecks --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.CollaborationChecks --configuration Release --no-build
+      - run: dotnet run --project tests/SecureAgentLab.CollaborationChecks --configuration Release --no-build -- --demo
+      - run: dotnet run --project src/SecureAgentLab.Comparisons --configuration Release --no-build -- portable
+  comparisons-container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build SecureAgentLab.slnx --configuration Release
+      - name: All 12 safeguard comparison pairs
+        shell: pwsh
+        run: ./scripts/Run-ComparisonLab.ps1 -Scenario all
+      - name: Preserve synthetic comparison summaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comparison-evidence
+          path: |
+            artifacts/comparisons/*/comparisons.json
+            artifacts/comparisons/*/summary.md
+            artifacts/comparisons/*/capture.json
+            artifacts/comparisons/*/*-containment.json
+            artifacts/comparisons/*/*-isolation.json
+            artifacts/comparisons/*/*-deployment.json
+          retention-days: 7
+          if-no-files-found: ignore
+  collaboration-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolated phase 8 agents and independent evaluator
+        shell: pwsh
+        run: ./scripts/Run-IsolatedCollaborationLab.ps1
+      - name: Preserve synthetic collaboration evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-collaboration-evidence
+          path: artifacts/phase8-isolated/
+          retention-days: 7
+          if-no-files-found: ignore
   isolation:
     runs-on: ubuntu-latest
     steps:
@@ -49,3 +94,7 @@ jobs:
       - run: dotnet run --project tests/SecureAgentLab.ModelChecks --configuration Release --no-build
       - shell: pwsh
         run: ./scripts/Run-ModelLab.ps1
+      - run: dotnet run --project tests/SecureAgentLab.CollaborationChecks --configuration Release --no-build
+      - shell: pwsh
+        run: ./scripts/Run-CollaborationLab.ps1
+      - run: dotnet run --project src/SecureAgentLab.Comparisons --configuration Release --no-build -- portable

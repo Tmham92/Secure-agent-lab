@@ -1,6 +1,10 @@
 # Secure Agent Lab: complete demo guide
 
-This guide explains every implemented demonstration, its security purpose, the commands to run it, the actions it actually performs and the evidence to inspect. It is extended at the end of each implementation phase, as required by `AGENTS.md`. Last updated: 8 October 2026, phase 7.
+Presenter materials are maintained in one consolidated `docs/Secure_Agent_Lab_Handout.docx`, with an editable Markdown source. Comparison phases A–E now implement all 12 before/after pairs. Phase 8 has both a desktop HTTP demo and a locally verified isolated worker/evaluator topology. Provider accounting remains synthetic; production multi-host coordination and a real pilot are not enabled.
+
+Verification update: the user's final local isolation output confirms both workers passed bypass checks and deployment inspection, with two reads, zero publications and an unchanged protected canary. Actions run 2 verified Linux/Windows check jobs and full solution builds; a passing isolation CI run on the final fixes still needs confirmation. Historical troubleshooting entries below preserve the earlier failures.
+
+This guide explains every implemented demonstration, its security purpose, the commands to run it, the actions it actually performs and the evidence to inspect. It is extended at the end of each implementation phase, as required by `AGENTS.md`. Last updated: 9 October 2026, isolated collaboration and comparison phases A–E.
 
 The lab explores a simple question: **can an agent propose an unsafe action without gaining the authority to execute it?** Model instructions, retrieved documents and model output are treated as untrusted input. A trusted gateway owns permission checks, quotas, approval and execution. The demonstrations use synthetic documents and reports. They do not attack a third-party system or deploy a production service.
 
@@ -24,6 +28,7 @@ dotnet run --project src/SecureAgentLab.Demo --configuration Release --no-build
 ./scripts/Run-DocumentLab.ps1
 ./scripts/Run-ModelLab.ps1
 ./scripts/Run-ResponseDrill.ps1
+./scripts/Run-CollaborationLab.ps1
 ```
 
 Run the isolation demonstration separately when Docker is ready:
@@ -42,13 +47,13 @@ These scripts finish rather than leaving a demo server running. Wait for one to 
 | 1 | Deterministic policy gateway, mock effects, approval, quotas, stop and hash chain | 17 local executable checks; offline demo |
 | 2 | Separate authenticated API and worker; operator role | 16 local HTTP/credential checks; desktop OS access remains unrestricted |
 | 3 | Durable approvals, idempotency, crash recovery and external signed audit | 20 local durable checks and process demo; local filesystem transactions only |
-| 4 | Linux isolation deployment, externally enforced egress and independent probes | Source/Compose validation; Docker runtime acceptance pending because local Engine is unavailable |
-| 5 | Real bounded reads of pinned synthetic local files | 14 Windows checks and process demo; two additional Linux-specific checks await runtime/CI |
+| 4 | Linux isolation deployment, externally enforced egress and independent probes | User supplied a successful local two-worker run: 2 reads, 0 publications, unchanged canary; final isolation CI still needs confirmation |
+| 5 | Real bounded reads of pinned synthetic local files | 14 local Windows checks; Windows and Linux document checks passed in Actions run 2 |
 | 6 | Strict model proposal parser and optional host-side Responses generation | 12 offline model checks and adversarial process demo; no live API call made |
 | 7 | Versioned synthetic report writes, shared runtime reservations and containment drill | 13/13 local phase 7 checks, including authenticated HTTP write and owned worker termination; see section 8 |
-| 8 | Scoped collaboration broker and independent evaluator | Planned, conditional on a multi-agent use case; not implemented |
+| 8 | Separate authenticated broker/evaluator and deterministic two-agent task | 18/18 local Windows checks, two-service demo and isolated two-worker/evaluator topology passed; new remote CI pending; see sections 12–13 |
 
-Local builds of existing projects use their restored assets. Full SDK restore of the phase 6 projects is currently blocked by access to the user NuGet configuration. Those projects were checked with the installed .NET compiler and framework references instead; that is not a successful full solution restore. Remote GitHub Actions, Linux document checks, container bypass tests and live-provider behavior remain unverified. Git metadata permissions have blocked staging/publication; local work does not imply a published commit.
+Current validation supersedes earlier troubleshooting notes: full local Release restore/build passed on 9 October 2026 with zero warnings/errors; all existing harnesses and the new collaboration checks passed. Actions run 2 previously verified Linux/Windows builds and check jobs; the final isolation fixes and this phase 8 change still need their own passing CI run. Optional live provider behavior remains unverified. Local work does not imply a published commit.
 
 ## 2. Architecture and trust boundaries
 
@@ -347,6 +352,159 @@ Synthetic report storage, custom lab identity, local locks and demonstration key
 
 ## 11. Next phase and guide maintenance
 
-Phase 8 is conditional: introduce authenticated sender/recipient/topic grants and quotas for an agent-message broker only if multiple agents are needed, with isolated workspaces and an independent evaluator whose answers/scoring credentials are outside agent reach. There is currently no agent collaboration capability authorized by a model proposal.
+Phase 8's synthetic collaboration is now implemented as a separate opt-in service (section 12); ordinary model proposals still cannot authorize messaging through the existing gateway. The isolated worker topology now passes local probes (section 13). Comparison phases A–E pass (section 14). The real pilot gate remains unapproved; its prepared review plan is in `docs/PILOT_READINESS.md`.
 
 After every finished phase, extend this guide before reporting completion. Add the purpose, learning goal, security issue, exact command, prerequisites, actor sequence, expected output, actual effects, evidence paths, cleanup/recovery and residual limits. Update the status matrix and README/plan. Preserve earlier commands, distinguish mock effects from real integrations, and state which checks actually ran on which platform. A planned feature or configured CI job is never described as a verified runtime control.
+
+
+## 12. Phase 8 controlled collaboration and independent evaluation
+
+### Purpose and learning goal
+
+Demonstrate a task that needs two bounded participants: a researcher sends synthetic facts to a writer, the writer calculates an answer and acknowledges receipt, and a separate evaluator checks the result and the authorized method. Explain why a plausible final answer is insufficient evidence of safe behavior. Message content cannot grant authority or control scoring.
+
+### Security issue and trust boundaries
+
+An unrestricted shared cache or mailbox can become an exfiltration channel, a way to impersonate a supervisor, or a route to evaluation answers. The trusted supervisor creates immutable run/agent grants. The broker derives the sender from a signed credential, then checks the exact recipient/topic, same-run binding, active state and budgets. A response envelope fixes `Role` to `worker-data`. JSON cannot specify a sender, supervisor role or score.
+
+The broker and evaluator run as separate trusted processes. They use different authentication keys and audiences. Only the broker has its RSA private transcript-signing key; the evaluator has the public key, its own answer configuration and scoring credential. Worker clients receive only their individual broker bearer credential. The trusted launcher necessarily knows bootstrap secrets; none are persisted or printed. Separate processes under the same desktop account are not an OS security boundary against hostile local code.
+
+The new broker is opt-in and separate from `SecureAgentLab.Api`; the original `MessageAgent` proposal remains denied. Broker mailboxes are scoped virtual resources; there are no worker-facing file paths or shared filesystem workspace APIs. Cache, artifact publication and writable-log endpoints explicitly reject requests. HTTP access/application logging is disabled so untrusted bodies do not become a second agent-readable channel. Signed evidence is available only through an operator route.
+
+### Prerequisites and exact commands
+
+.NET 10 SDK and PowerShell 7. No Docker, model key or live provider request is needed for this deterministic HTTP demonstration. Run from the repository root:
+
+```powershell
+dotnet build SecureAgentLab.slnx --configuration Release
+dotnet run --project tests/SecureAgentLab.CollaborationChecks --configuration Release --no-build
+./scripts/Run-CollaborationLab.ps1
+```
+
+The launcher picks free loopback ports and starts exactly two owned service processes. HTTP is permitted only through an explicit loopback exception; the API otherwise requires HTTPS. Agents are deterministic HTTP clients in the trusted harness, not independently sandboxed hostile processes.
+
+### Actor sequence
+
+1. The supervisor generates fresh credential/signing keys and registers `researcher` and `writer` in `demo-run`, plus a synthetic outsider in another run. Researcher/writer grants name exactly `researcher -> writer / facts` and `writer -> researcher / ack`. Credentials last two minutes. Each normal grant permits 32 attempts and 2,048 measured UTF-8 content bytes.
+2. The outsider attempts cross-run delivery. The researcher tries a `supervisor` topic and alternate cache/artifact/log channels. A worker tries the evaluator using its broker credential. All are rejected without message or scoring effects.
+3. The researcher sends `20 + 22`. The writer consumes its authenticated envelope, parses two bounded integers, sends `facts received` and the researcher consumes the acknowledgment. The writer submits the computed `42` once.
+4. The supervisor obtains a random one-time evaluator challenge, then asks the broker to seal the run. Sealing freezes further run effects and RSA-PSS signs the complete run transcript with the challenge and timestamp. Other runs' events are excluded.
+5. Altered evidence fails signature verification. The genuine snapshot passes only if the answer, exact expected facts, topics, actors, ordered message delivery/consumption and one submission all match. Correct answer alone, wrong answer with correct steps and substituted facts all fail executable checks. Evaluation replay and later messages fail.
+
+### Expected output and actual effects
+
+```text
+Cross-run message: Denied (route_denied)
+Supervisory message: Denied (route_denied)
+cache channel: Denied (channel_denied)
+artifacts channel: Denied (channel_denied)
+logs channel: Denied (channel_denied)
+Worker evaluator access: Denied (separate credential audience/key)
+Authorized collaboration: 2 delivered messages, 2 consumed messages, 1 submission (answer 42)
+Evaluation tampering: Denied (signature_invalid)
+Independent evaluation: PASS (correct answer AND authorized method)
+Phase 8 demo complete; owned broker and evaluator processes will stop.
+```
+
+Exactly two synthetic messages enter the mailboxes and are consumed, and one answer is submitted. Five allowed method events are signed; rejected typed attempts in `demo-run` are included too. Other-run denial is tested separately and is not exposed in this run's transcript. No document reads, real publications, arbitrary HTTP calls, permission changes or persistent shared-cache writes occur. Unauthenticated/malformed HTTP requests are rejected before domain execution and do not appear as broker method events; the method transcript is not a comprehensive perimeter access log.
+
+### Bounds and failure behavior
+
+One lock covers grant checks, attempt and byte accounting, queue operations and method-event creation. Authenticated denied attempts consume call quota. UTF-8 bytes are measured for send, receive and submit, with a 512-byte per-content maximum. Receiving also consumes the recipient's byte budget. Per-run queue capacity is eight envelopes. The service has at most 32 agent grants and 4,096 method events; a full audit buffer prevents effects rather than evicting evidence. Worker request bodies are limited to 16 KiB; the operator-only evaluator body is bounded to accommodate a signed snapshot. Concurrent receives consume each envelope once. Repeated sends are distinct messages, not idempotent retransmissions.
+
+Expired/revoked agents, stopped or sealed runs and exhausted budgets cannot execute later operations. Stop blocks new grants. Previously delivered/consumed messages are not undone. The challenge expires at one minute; a valid signed and bound scoring attempt consumes it even if the answer/method fails. Malformed or forged evidence cannot consume another run's valid scoring attempt.
+
+### Evidence and verification
+
+The launcher saves `signed-transcript.json`, `broker-public-key.pem` and `evaluation.json` under ignored `artifacts/phase8/<random-id>/`. The transcript is base64 JSON plus an RSA-PSS signature; decode it for presentation, but send the original bytes to verification. It contains only synthetic messages and a submitted answer, not worker bearer tokens, HMAC keys, the RSA private key or evaluator expected-answer configuration. Saved signed evidence proves what the trusted broker recorded at sealing; it is not proof against compromise of that broker/signing key. Preserve the matching public key and challenge-bound snapshot together.
+
+Verified on Windows on 9 October 2026: Release build, 18/18 collaboration checks, the two-service script, and regressions (17 core, 16 transport, 20 durable, 14 documents, 12 model and 13 phase 7 checks). New CI steps run checks/demo on Linux and Windows; these configured jobs have not yet verified this commit.
+
+### Cleanup recovery and limitations
+
+The launcher always terminates only its owned broker/evaluator process trees, including on startup/assertion failure. It leaves ignored synthetic evidence for inspection. No fixed ports or containers remain. Delete a chosen phase 8 evidence directory only when it is no longer needed. Broker queues, grants, quotas, revocations and transcripts are volatile; restart starts a fresh lab with new keys/grants and challenge. There is no durable mailbox, multi-replica coordination, crash-replay delivery guarantee, provider billing or production identity provider.
+
+The simulated workers run inside the trusted harness. API tests establish logical run isolation and absence of writable alternate API channels, not filesystem/network containment for arbitrary agent code. The phase 4 container demo remains a separate verified topology; the new section 13 supplies isolated worker probes, private mounts and direct-evaluator/alternate-channel tests. Desktop results alone still do not establish containment, and no finite probe suite proves absence of every covert channel. The evaluator's fixed synthetic rubric is deliberately narrow and does not claim to judge general research quality. The production pilot remains gated.
+
+
+## 13. Phase 8 isolated collaboration completion and pilot readiness
+
+Purpose: extend the two-agent task beyond logical HTTP authorization to private worker workspaces and externally enforced network routes. Learning goal: worker credentials are useful only through the permitted relay; neither a correct answer nor a successful broker denial proves OS isolation on its own.
+
+Run with PowerShell 7 and Docker Engine in Linux-container mode:
+
+```powershell
+./scripts/Run-IsolatedCollaborationLab.ps1
+```
+
+The trusted guardian installs IPv4/IPv6 OUTPUT denial before services start. Researcher and writer each run as UID 1654 in a separate non-root, readonly container with dropped capabilities, no-new-privileges, private 8 MiB workspace/tmpfs, 192 MiB memory, 0.5 CPU and 64 PIDs. They share only the guardian's network namespace; no host ports, socket, host workspace or shared cache is mounted. UID-based rules permit only the fixed relay, which forwards POST send/receive/submit to the broker. It exposes no operator, cache, artifact or log route. Broker and evaluator run as separate trusted containers with different credentials/answers/signing material; workers cannot directly reach either backend.
+
+The supervisor generates keys in memory and captures issued worker/evaluator tokens without printing/persisting them. It starts workers only after grant issuance. Each worker proves relay/backend readiness (401 without authentication), absence of foreign scratch/protected mounts/signing or scoring configuration, readonly root, and failed direct broker/evaluator IPv4/IPv6, metadata and host routes. Each creates private scratch; the next worker cannot see it. Safe deployment inspection independently checks mounts, user, limits/capabilities and private PID configuration. Researcher sends facts, writer consumes/calculates/acknowledges, researcher consumes acknowledgment, and writer submits its private scratch answer. The operator seals the run and the separate evaluator validates the signed methods and answer.
+
+Expected: two worker probe PASS lines, facts/combine/ack/submit PASS lines, then `PASS isolated collaboration: correct answer and authorized method, 2 messages and 1 submission`. Exactly two messages are delivered/consumed and one synthetic answer is submitted. No documents, real publications or out-of-scope transfers occur. Saved `artifacts/phase8-isolated/<project>/` holds probe logs, safe deployment JSON, signed transcript, evaluation and public key. Worker logs contain controlled status text; message bodies/credentials never enter request logging or worker-readable artifact endpoints. No credentials/private keys are saved in that evidence.
+
+The launcher removes its owned containers and internal network in finally; a cleanup failure fails the script. Scratch disappears, signed evidence remains. Broker state is volatile and must start fresh after failure/restart; there is no durable message recovery. Linux Docker local execution passed on 9 October 2026, including the original `Run-IsolatedLab.ps1` rerun with 2 reads, 0 publications and unchanged canary. New remote CI remains pending. These are bounded deterministic adversarial probes, not proof against a compromised Docker host, guardian or trusted broker, or every timing/covert channel.
+
+The pilot gate preparation is `docs/PILOT_READINESS.md`: allowed task/resources, trust assumptions, grants, numerical entry/exit limits, proposed shadow/supervised sequence, review/monitoring roles and recovery. Owners and real resources are deliberately unassigned. No live pilot, paid-provider trial or production deployment is approved. Existing phase 7 local accounting is not real provider reconciliation or a distributed transaction service.
+
+## 14. Comparison phases A to E
+
+### Purpose trigger and safety
+
+Explain why a safeguard matters by observing its absence and then the secure result. Each pair uses fixed equivalent synthetic inputs and fresh `unsafe`/`secure` fixture directories. A pair passes only after its intended unsafe failure actually happens, the secure failure is absent and allowed work succeeds. Rejected client requests, crashes, dead targets and missing positive controls fail the demo.
+
+The vulnerable code is in a separate educational executable. No unsafe flag was added to the normal gateway/API/deployment. User-supplied paths, destinations, code or payloads are not accepted. Desktop transfer/message/permission examples use in-memory stores and fake bytes; they perform no HTTP. The intentionally unsafe file reader only accepts named generated fixture paths and retains an outer 8 KiB read cap and fixed synthetic link target. It demonstrates inner directory/size safeguards absent, not unrestricted host file access.
+
+The container transfer has two levels: the unsafe worker may read one generated fake-secret mount and reach one local capture port; the secure worker has neither access. Both remain non-root/read-only with dropped capabilities and resource limits. A trusted guardian denies all other IPv4/IPv6 routes, including host/metadata/internet probes. The Docker network is internal, with no published ports or socket. The local capture accepts only the exact fake secret and one effect per variant. Build-time image/package downloads are distinct from runtime networking. Keep the educational project out of production deployments.
+
+### Exact commands and phase progress
+
+Prerequisites: .NET 10 Release build, PowerShell 7; Docker Linux additionally for all/container pairs. From the repository root:
+
+```powershell
+dotnet build SecureAgentLab.slnx -c Release
+./scripts/Run-ComparisonLab.ps1 -Scenario all
+# No Docker required for these ten pairs:
+./scripts/Run-ComparisonLab.ps1 -Scenario portable
+# One pair at a time:
+./scripts/Run-ComparisonLab.ps1 -Scenario approval
+./scripts/Run-ComparisonLab.ps1 -Scenario isolation
+./scripts/Run-ComparisonLab.ps1 -Scenario containment
+```
+
+| Phase | Completed work | Local evidence |
+|---|---|---|
+| A | Shared pair/effect framework and exact approval | Substitution observed unsafe, original only secure |
+| B | Scope, forbidden operations, file paths/links/size and injected instructions | All four pairs pass on Windows and Linux |
+| C | Retry/reopen, audit tampering/outage, resource version, quota race and retries | All five pairs pass on Windows and Linux |
+| D | Outer-contained fake mount/transfer and active stop | Both pairs pass in Linux containers |
+| E | Individual/all selectors, linked 12-pair index, read-only-permission CI jobs and single handout | All launcher passes; remote CI for these changes is configured, not yet verified |
+
+### Each comparison what to explain and inspect
+
+| Case and selector | Missing safeguard and trigger | Actual unsafe result | Secure result and positive control |
+|---|---|---|---|
+| 1 `scope` | Authenticated task A supplies task B identity | Exact fake task-B bytes returned | B denied with no result/effect; pinned A read succeeds |
+| 2 `actions` | Executor skips immutable grants for three proposals | One synthetic capture record, one message and admin=true | All three denied, stores unchanged; scoped read succeeds |
+| 3 `approval` | Host approval covers operation only; replace draft | Unreviewed harmless replacement stored | Replacement denied with 0 effects; exact reviewed original publishes once |
+| 4a `retry` | Commit then inject lost acknowledgment; reopen/retry | Two local publication rows | RecoveryRequired, then publication_replayed; one durable effect after reopening |
+| 4b `audit` | Delete last event and rewrite/re-hash history | Local chain accepts concealed publication | Independent signed head rejects both rewrite/truncation; audit outage creates 0 new publications; earlier publication remains |
+| 5 `isolation` | Fake mount plus direct capture route | Capture receives exact fake secret once | Mount absent, direct route denied, capture empty; permitted relay reads succeed for both |
+| 6 `files` | Traversal, generated directory link, declared-zero size | Fake secret returned through both paths; 256-byte file exceeds intended 128-byte cap | All three denied without partial result; known pinned task file reads within cap |
+| 7 `injection` | Treat document marker as command | Fake secret appended to local in-memory capture | Same proposed transfer denied; authority-bearing malformed batch rejected before any partial read; scoped read succeeds |
+| 8 `version` | Two exact-content approvals against version 0; omit current-version check | Second overwrites first, version 2 | First retained at version 1; stale second denied; scoped read succeeds |
+| 9a `quota` | Barrier coordinates two check-before-charge requests for allowance 1 | Two admissions, remaining -1 | Local shared reservations admit one, remaining exactly 0 |
+| 9b `retry-limit` | Fixed throwing tool with unaccounted retries | Five actual tool invocations | Initial + one retry execute (2); excess denied before tool invocation |
+| 10 `containment` | Stop acknowledgement only sets a flag; release controlled child | Child writes late after acknowledgement | Revocation marker + owned-process termination prevent late file; both preserve earlier committed file and record child exit |
+
+Use `-Scenario` with any selector above to present it alone. Say what protection is absent before showing unsafe output; then point to measured effects, the secure denial and the working allowed path. Cases 2 and 6 report their distinct sub-results; cases 4 and 9 have separately labelled pairs. Case 11 collaboration has the existing secure phase 8 demos; a vulnerable collaboration pair was not part of this plan.
+
+### Evidence expected output and cleanup
+
+The desktop executable prints `PASS <case>: unsafe failure observed; secure failure absent; positive controls passed`, then `Comparison pairs: 10/10 passed`. Container output reports exact capture 1/0 and late-write 1/0, earlier-write preservation and observed child exits. The all launcher requires exactly 12 passing records and prints `Comparison overview (12 pairs)` with its index path.
+
+Each run saves ignored `artifacts/comparisons/<id>/comparisons.json` and `summary.md`; the all suite adds a `suite-<id>` index linking source summaries. Records name the scenario, missing safeguard, fixed input/hash, decisions, observed effects, positive controls, pass result and measured duration. Container evidence also records actual worker JSON, stop/late/exit timestamps, revocation/kill flags, capture contents and deployment inspection. Expected unsafe/secure outcomes are explicit in the guide and summaries and asserted in code. Fixture ledgers are real local synthetic effects; transfer stores on the desktop are in-memory, whereas case 5 uses an actual bounded local HTTP capture.
+
+Portable fixtures remain for inspection and do not start services. Raw durable fixture files can contain short-lived synthetic run/approval identifiers; keep those directories private/ignored and publish only selected redacted summaries. No private signing/HMAC keys are saved. Consequential secure runs are stopped after inspection. Container children are supervised with bounded IPC/exit deadlines; only owned processes are killed. Container projects are always removed; cleanup failure fails acceptance. The early failed tmpfs archive-copy attempt is not a successful run; final collection reads evidence through the live owned container before cleanup. Compare earlier effects separately from later ones: stop never undoes a completed publication.
+
+Verified locally on 9 October 2026: all ten portable pairs on Windows and Linux, both Linux container pairs, the full 12-pair aggregate launcher, phase 8 isolated collaboration and the original isolation regression. CI now has Linux/Windows portable comparisons and separate comparison/collaboration container jobs, but a configured job is not a verified remote run. These deterministic fixtures demonstrate specific failure modes; they do not establish production exploitability, arbitrary external exactly-once behavior, general model robustness or distributed provider accounting.

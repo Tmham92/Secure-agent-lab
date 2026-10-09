@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "SecureAgentLab.Collaboration": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:64272;http://localhost:64274"
+    }
+  }
+}

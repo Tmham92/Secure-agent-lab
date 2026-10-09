@@ -6,7 +6,24 @@ Build a .NET 10 proof of concept that makes agent authorization independent of m
 
 Repository: https://github.com/Tmham92/Secure-agent-lab
 
-Read README.md for the primary incident sources, threat model, security measures and extension prompts. This plan defines implementation tasks and evidence required to finish them. Milestone 1 is implemented in this repository and passes the local Release build, 17 executable checks and deterministic demo. The implementation is locally verified in the desktop checkout; Git metadata permissions currently block commit and publication. Milestone 1 acceptance still requires passing GitHub Actions on the published commit. Milestone 2 now has explicit contracts, immutable grants, a separate worker/API, host-issued signed credentials and HTTP security checks. Milestone 3 is implemented locally with durable atomic synthetic publication, exact-content approvals, an external signed audit collector, and 20 passing durable checks. Git staging/publication remains blocked by the sandbox. Milestone 4 now has a Linux-container isolation deployment and independent bypass probes; runtime acceptance is pending because the local Docker Engine is unavailable. Milestone 5 is now implemented with a bounded, pinned local synthetic document adapter, safe handle-relative file opens, 14 passing Windows checks and a file-backed process demo. Linux-specific file checks and container integration remain pending runtime/CI verification. Milestone 6 now has an optional host-side Responses adapter, a strictly validated proposal source, an offline adversarial demo and model checks. No paid API call was made. Full SDK restore for the new projects remains blocked by NuGet configuration access; direct .NET compiler checks and the existing-project API/worker builds provide local evidence. Milestone 7 now has an opt-in versioned synthetic report store, durable shared runtime reservations and a response drill with 13 passing local checks. Token/cost limits in HTTP admission are synthetic units; production provider accounting, distributed coordination and Docker/remote CI acceptance remain pending. Milestone 8 remains conditional and planned. DEMO_GUIDE.md documents every demonstration and must be extended after each finished phase; the tasks below retain their original acceptance requirements.
+Read README.md and DEMO_GUIDE.md for the threat model, demonstration commands and evidence. The milestones below retain their original acceptance requirements.
+
+## Current status as of 9 October 2026
+
+| Original phase | Implementation and verification | Remaining scope |
+|---|---|---|
+| 1 Deterministic gateway | Implemented; core checks and offline demo passed locally and in Actions run 2 | Production integration is outside this synthetic phase |
+| 2 Authenticated processes | Implemented; transport/grant checks passed locally and in Actions run 2 | Educational HMAC credentials are not a production identity provider |
+| 3 Durable approval and audit | Implemented; restart, crash, replay and tampering checks passed locally and in Actions run 2 | Local synthetic effects, not arbitrary external exactly-once transactions |
+| 4 Isolation and egress | Implemented; user supplied successful local two-worker output with two reads, zero publications and unchanged canary | Passing isolation CI on final fixes must be confirmed separately |
+| 5 Scoped document adapter | Implemented; Windows and Linux document checks passed in Actions run 2 | Synthetic local files, not a production document service |
+| 6 Optional model proposals | Implemented; full solution builds and offline model checks passed in Actions run 2 | Live provider calls remain unverified |
+| 7 Bounded writes and response | Implemented for the synthetic lab; 13 response checks passed locally and in Actions run 2 | Provider accounting uses synthetic units; multi-host coordination and production external writes are not implemented |
+| 8 Collaboration and independent verification | Synthetic broker/evaluator implemented; 18 local checks, two-service demo and isolated two-agent container demo passed locally | Broker is volatile and single-process; remote CI for these changes remains pending |
+
+All eight phases now have synthetic lab implementations, with the limits above. The phase 8 isolated topology now also passes local bypass/workspace checks and independent scoring. Remote CI for these changes and the real production pilot gate remain unfinished; synthetic provider accounting and local coordination do not satisfy production integration requirements. No production deployment or broad autonomy has been enabled.
+
+The before-and-after educational extension in [comparison-demo-plan.md](comparison-demo-plan.md), phases A to E, is now implemented: 10 portable pairs plus 2 container pairs, all locally verified. A reviewable future pilot gate is prepared in [docs/PILOT_READINESS.md](docs/PILOT_READINESS.md); no real pilot is approved. The presenter handout is maintained in [docs/Secure_Agent_Lab_Handout.docx](docs/Secure_Agent_Lab_Handout.docx), with editable text alongside it. Extend DEMO_GUIDE.md and the handout when each comparison phase finishes.
 
 ## Desktop setup and first commit
 
@@ -132,6 +149,8 @@ Acceptance: concurrent redemption, changed content, policy updates, replay, rest
 
 ## Milestone 4: isolation and egress
 
+Historical troubleshooting follows. The latest complete local rerun now passes both workers, deployment inspection and effect counts; the current remote CI result is still pending. See the current status matrix and guide for acceptance evidence.
+
 CONNECT probe correction: the next local run verified relay startup/readiness and preceding bypass checks. Added the explicit synthetic Host authority required by .NET so CONNECT denial is measured at the relay rather than failing during client construction. Final two-worker/effect acceptance remains pending.
 
 Confirmed startup correction: local relay logs showed a read-only-filesystem error creating the default FastCGI temp directory. Explicit FastCGI/uWSGI/SCGI temp paths now use the relay's existing bounded `/tmp` mount without relaxing isolation. Full runtime acceptance requires rerunning the container demo.
@@ -175,6 +194,20 @@ Only if the use case requires multiple agents, add an authenticated message brok
 Separate the evaluator's credentials, answers and scoring system from agents. Validate authorized methods as well as final output.
 
 Acceptance: cross-run access, unauthorized messages, forged supervisory messages and evaluation tampering fail. No attack reproduction against real third-party infrastructure is needed.
+
+### Phase 8 implementation on 9 October 2026
+
+The user selected a multi-agent demonstration. `SecureAgentLab.Collaboration` adds a separate opt-in broker and independent evaluator; the original gateway still denies `MessageAgent`. `Run-CollaborationLab.ps1` starts the two trusted services as separate owned processes. Researcher/writer HTTP clients use different grant-bound credentials, exchange exactly scoped synthetic facts and acknowledgment, and submit one answer. An evaluator-only random challenge binds a sealed RSA-PSS-signed transcript to one fresh evaluation. The evaluator checks exact task facts, sender/recipient/topic and ordered send/consume/submit effects, as well as its private expected answer.
+
+Atomic per-agent attempt/UTF-8 quotas, queue/audit capacities, expiry, revoke, stop, immutable grants, strict request schemas and worker/operator separation are enforced. Workers cannot publish via cache/artifact/log APIs or access evaluator routes with broker credentials. Saved evidence excludes bearer credentials, signing keys and expected-answer configuration.
+
+Verified locally: full Release build, 18/18 phase 8 checks, all existing check harnesses, and the two-service script. CI now includes phase 8 checks/demo on Linux and Windows but has not run for this change. Broker state is intentionally volatile and single-process; repeated sends create distinct messages, while each queued envelope is consumed once. There is no persistent message recovery or multi-replica delivery protocol. The deterministic clients are simulated workers in the trusted harness, not hostile OS processes. Existing phase 4 container evidence must not be presented as verification of this new collaboration topology. The later isolated collaboration implementation below supersedes this initial desktop-only validation limit.
+
+### Remaining lab work completed
+
+`Run-IsolatedCollaborationLab.ps1` now places researcher/writer in distinct non-root, readonly containers with private tmpfs workspaces, no host mounts/sockets and relay-only networking enforced by the trusted IPv4/IPv6 guardian. Both workers passed origin readiness, workspace/secret absence, direct broker/evaluator/metadata/host denial, alternate-channel denial and deployment inspection. The isolated task passed independent evaluation (2 delivered/consumed messages, 1 submission). The original `Run-IsolatedLab.ps1` was rerun successfully too. Saved evidence and cleanup are described in DEMO_GUIDE.md section 13.
+
+Comparison phases A–E are implemented in the separate `SecureAgentLab.Comparisons` executable and disposable deployment. Ten portable pairs pass on Windows and Linux; isolation/containment pairs pass in Linux containers; the aggregate launcher validates all 12 and links their actual effects. New container CI jobs are configured but remote results are not yet verified. This does not enable unsafe mode in the normal gateway. Detailed commands and limitations are in the guide and the single consolidated handout.
 
 ## Pilot gate
 

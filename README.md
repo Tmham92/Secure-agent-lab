@@ -1,20 +1,24 @@
 # Secure Agent Lab — a .NET controlled-autonomy POC
 
+Presenter resources: [Word handout](docs/Secure_Agent_Lab_Handout.docx), [editable handout text](docs/Secure_Agent_Lab_Handout.md), and [safeguard comparison demos](comparison-demo-plan.md).
+
+Current roadmap: original phases 1 to 7 have synthetic lab implementations, including the user's successful local container isolation run. Phase 8 now has a synthetic authenticated broker and separate evaluator (local checks, desktop demo and isolated two-agent topology verified; new remote CI pending); provider accounting, multi-host coordination and the production pilot gate remain unfinished. All comparison phases A–E are implemented and all 12 pairs pass locally. Pilot readiness is documented in `docs/PILOT_READINESS.md`; a live pilot is not approved. See [the current status table](plan.md#current-status-as-of-9-october-2026) for verification details; older validation notes below describe earlier stages.
+
 Read [the complete demo guide](DEMO_GUIDE.md) for every component and phase: purpose, security issue, exact commands, expected effects, evidence, cleanup and limitations. Extend this guide after each finished phase, as required by AGENTS.md.
 
-Isolation CI follow-up (9 October 2026): the DNS probe now handles explicit socket permission denial as blocked egress, including denial during send. The supplied runner output passed startup positive controls before that probe failed; a complete isolation rerun is still required.
+Historical isolation CI follow-up (9 October 2026): the DNS probe now handles explicit socket permission denial as blocked egress, including denial during send. The original runner failed there; the latest complete local rerun passes. A current remote isolation CI pass still needs confirmation.
 
 Actions run #2 passed the Linux and Windows check jobs, but isolation then timed out on the relay path. The launcher now checks readiness from the restricted worker, preserves worker output and collects safe relay/firewall diagnostics before cleanup. Failed CI runs upload `isolation-diagnostics`; see DEMO_GUIDE.md for the evidence and remaining acceptance.
 
-Local diagnostics confirmed that Nginx exited when creating its default FastCGI temporary directory on the read-only root. All module temporary paths now use the existing `/tmp` tmpfs; full isolation must be rerun to verify the correction.
+Local diagnostics confirmed that Nginx exited when creating its default FastCGI temporary directory on the read-only root. All module temporary paths now use the existing `/tmp` tmpfs; the full local isolation rerun verified this correction.
 
-The subsequent local run passed relay readiness and the earlier bypass checks, then exposed a malformed CONNECT probe. The probe now supplies an explicit synthetic Host authority so the relay can reject the actual request; complete isolation acceptance remains pending.
+The subsequent local run passed relay readiness and the earlier bypass checks, then exposed a malformed CONNECT probe. The probe now supplies an explicit synthetic Host authority so the relay can reject the actual request; the latest full local isolation rerun now passes (the earlier note records the failure that prompted this fix).
 
 A learning project for a .NET developer who wants to deploy their own AI agents safely. The agent proposes work; a host-owned gateway decides which actions can execute. Start with deterministic proposals, understand the trust boundary, then add a model and real infrastructure one control at a time.
 
-Milestones 1–3 and 5 have a dependency-free .NET 10 implementation: the original offline lab plus a separate authenticated ASP.NET Core gateway and deterministic worker, immutable task grants, durable exact-content approval, a separate signed audit collector, a bounded file-backed synthetic document adapter, executable security checks and GitHub Actions. Milestone 4 adds a container isolation deployment with runtime verification still pending. README.md and plan.md retain the design and the roadmap for later milestones. No model account, API key, cloud subscription or live target is required. .NET 10 is an LTS release; see [Microsoft's overview](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/overview).
+Milestones 1–3 and 5 have a dependency-free .NET 10 implementation: the original offline lab plus a separate authenticated ASP.NET Core gateway and deterministic worker, immutable task grants, durable exact-content approval, a separate signed audit collector, a bounded file-backed synthetic document adapter, executable security checks and GitHub Actions. Milestone 4 adds a container isolation deployment with a successful current local runtime rerun. README.md and plan.md retain the design and the roadmap for later milestones. No model account, API key, cloud subscription or live target is required. .NET 10 is an LTS release; see [Microsoft's overview](https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-10/overview).
 
-**This is a synthetic learning lab, not a production deployment.** The offline demo shares one process. Desktop process demos authenticate the worker but do not restrict its OS/network access. Phase 4 adds a separate Linux-container isolation demo; its runtime acceptance is pending a running Docker Engine.
+**This is a synthetic learning lab, not a production deployment.** The offline demo shares one process. Desktop process demos authenticate the worker but do not restrict its OS/network access. Phase 4 adds a separate Linux-container isolation demo; its local runtime probes pass with Docker Linux; remote CI remains separately verified.
 
 ## Contents
 
@@ -461,9 +465,38 @@ Local .NET SDK 10.0.400 validation on 8 October 2026 passed: Release build with 
 dotnet run --project tests/SecureAgentLab.DurableChecks --configuration Release --no-build
 ```
 
-GitHub Actions is configured to run all five harnesses, Windows document/model checks, the original demo and a separate Docker isolation job. Remote CI is unverified until publication. Phase 4 source, PowerShell syntax and Compose configuration validate locally; its container bypass checks remain **unexecuted because Docker Engine is not running**, so runtime acceptance is pending. Git staging is still blocked by permission to create `.git/index.lock`, despite repository write permission; no commit or push is claimed. An earlier GitHub connector publication attempt also returned 403. Phase 5 is implemented locally with 14/14 Windows document checks and a passing file-backed demo; Linux-specific checks and Docker integration remain unverified. Phase 6 adds optional host-side model generation and strict proposal parsing; offline model checks/demo are verified, while full SDK restore of the new projects and live API calls remain unverified. Phase 7 is implemented locally with 13/13 checks for versioned synthetic writes, crash recovery, shared budgets, cancellation, authenticated HTTP writes and termination of an owned worker fixture. Run `./scripts/Run-ResponseDrill.ps1`; see DEMO_GUIDE.md for effects and recovery limits. API runtime admission uses synthetic units, not measured provider tokens or billing. Milestone 8 remains conditional and planned. The incident background was supplied with the original design package and is not independently validated by this implementation work.
+Current local validation on 9 October 2026: full Release build, all security harnesses, response drill, original isolation and the new isolated collaboration demo pass. Ten portable comparison pairs pass on Windows and Linux, and both container pairs pass; the aggregate launcher verifies all 12. CI now includes portable comparisons on Linux/Windows and separate isolated collaboration/comparison jobs; new remote runs remain unverified. Live provider calls, real provider accounting, multi-host transactions and production identity/pilot remain outside verified lab behavior. The incident background came from the supplied design package and is not independently validated by this implementation. Earlier troubleshooting notes are historical.
 
 Implementation references: [Microsoft authentication documentation](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/?view=aspnetcore-10.0), [RSA signature verification](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rsa.verifydata?view=net-10.0), and [.NET disk flushing](https://devblogs.microsoft.com/dotnet/file-io-improvements-in-dotnet-6/).
+
+## Phase 8 controlled collaboration and independent evaluation
+
+Run from the repository root after a Release build:
+
+```powershell
+dotnet build SecureAgentLab.slnx --configuration Release
+dotnet run --project tests/SecureAgentLab.CollaborationChecks --configuration Release --no-build
+./scripts/Run-CollaborationLab.ps1
+```
+
+The script starts a broker and evaluator in separate owned processes on dynamically assigned loopback ports. Two deterministic HTTP clients exchange `20 + 22` and `facts received` using sender/recipient/topic grants, then submit `42`. Watch cross-run, supervisory-topic, alternate-channel and worker-to-evaluator attempts fail. The evaluator rejects altered evidence, then accepts a fresh signed transcript only when both the answer and prescribed methods are correct. Exactly two messages are delivered and consumed, with one submission. Evidence is saved under ignored `artifacts/phase8/<id>/`; credentials and private keys are not saved. All owned services stop on success or failure.
+
+This is an opt-in service, not a new permission for ordinary `MessageAgent` proposals. Agent identities come from signed grant-bound credentials. Attempts, measured UTF-8 bytes, queue capacity and audit capacity are bounded atomically; expiry, revocation, stop and sealing block later actions. Received text is `worker-data`, never supervisory authority. Workers have no shared cache, artifact store or writable log route. The evaluator has its own credential key/audience, task answer and one-time challenge; only the broker public verification key enters its process.
+
+Local Windows validation: Release build with zero warnings/errors, 18/18 collaboration checks, the two-service demonstration, and existing harnesses passed. Linux/Windows CI is configured for this change but not yet verified. Simulated workers share a trusted test harness: this demo does not establish OS workspace isolation for hostile agents. The new `./scripts/Run-IsolatedCollaborationLab.ps1` adds independently probed worker containers, private tmpfs workspaces and relay-only networking; it passed locally, including independent scoring. The desktop script itself still simulates worker clients. Broker state is volatile, has no multi-replica/crash-recovery guarantee, and does not replace the durable phase 3 audit collector. Restart starts a fresh lab and requires new credentials/challenges. Custom HMAC credentials and loopback-only HTTP are educational; use reviewed workload identity, TLS and isolation for a real deployment. See the extended [demo guide](DEMO_GUIDE.md#12-phase-8-controlled-collaboration-and-independent-evaluation).
+
+## Run the comparison demonstrations
+
+```powershell
+dotnet build SecureAgentLab.slnx -c Release
+./scripts/Run-ComparisonLab.ps1 -Scenario all
+```
+
+Requires PowerShell 7 and Docker Linux for `all`, `isolation` and `containment`. Use `-Scenario portable` for all ten desktop pairs without Docker, or choose one: `approval`, `scope`, `actions`, `files`, `injection`, `retry`, `audit`, `version`, `quota`, `retry-limit`, `isolation`, `containment`.
+
+Every pair asserts an actual unsafe consequence, its absence in the secure run, and a working allowed path. All 12 pass locally. The unsafe code lives only in `SecureAgentLab.Comparisons`; the normal gateway and API remain secure. Desktop transfer/message/permission examples use in-memory synthetic stores, never network requests. The Docker transfer example uses only a named fake-secret mount and local capture service, inside a default-deny outer boundary with no host ports/socket or internet route. The stop pair records stop acknowledgment, child exit and actual late-file effects separately. Read the printed `artifacts/comparisons/suite-*/summary.md` for the linked measurements; do not mistake a prevented unsafe failure for a successful unsafe demonstration.
+
+The single consolidated Word handout covers all eleven secure use cases and the twelve comparison pairs. `DEMO_GUIDE.md` sections 13–14 contain the topology, per-phase/per-pair commands, effects, evidence, cleanup and limits. `docs/PILOT_READINESS.md` records the future supervised gate; no live deployment or broad autonomy has been enabled.
 
 ## Prompts to create and extend the POC
 
