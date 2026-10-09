@@ -37,8 +37,14 @@ internal static class IsolationChecks
             using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(700));
             // Valid query for example.invalid; a response would expose an unapproved DNS channel.
             byte[] query = [0x12,0x34,1,0,0,1,0,0,0,0,0,0,7,101,120,97,109,112,108,101,7,105,110,118,97,108,105,100,0,0,1,0,1];
-            await dns.SendToAsync(query, SocketFlags.None, new IPEndPoint(IPAddress.Parse("127.0.0.11"), 53));
-            try { await dns.ReceiveAsync(new byte[512], SocketFlags.None, timeout.Token); throw new InvalidOperationException("DNS channel is reachable."); }
+            try
+            {
+                await dns.SendToAsync(query.AsMemory(), SocketFlags.None, new IPEndPoint(IPAddress.Parse("127.0.0.11"), 53), timeout.Token);
+                await dns.ReceiveAsync(new byte[512], SocketFlags.None, timeout.Token);
+                throw new InvalidOperationException("DNS channel is reachable.");
+            }
+            catch (SocketException e) when (e.SocketErrorCode == SocketError.AccessDenied)
+            { Console.WriteLine("PASS direct DNS blocked by socket permission denial"); }
             catch (OperationCanceledException) { Console.WriteLine("PASS direct DNS blocked"); }
         }
         using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { BaseAddress = new Uri("http://127.0.0.1:8080"), Timeout = TimeSpan.FromSeconds(5) };

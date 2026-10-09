@@ -132,6 +132,8 @@ Acceptance: concurrent redemption, changed content, policy updates, replay, rest
 
 ## Milestone 4: isolation and egress
 
+9 October 2026 CI follow-up: corrected the DNS probe to accept explicit socket access denial during send/receive and apply cancellation to send. Worker Release build passes locally. Supplied runner evidence covers startup positive controls only; full container acceptance awaits a passing rerun.
+
 Deploy the worker separately with private per-run storage, non-root identity, read-only root filesystem, dropped capabilities and CPU/memory limits. Do not mount host sockets, broad secrets or writable shared caches. Restore dependencies separately from runtime.
 
 Enforce default-deny networking outside the worker. Protected tools are reachable only through the gateway/executor. Restrict model-provider traffic and broker egress. Cover redirects, DNS rebinding, metadata endpoints, private ranges, IPv4/IPv6 and indirect exfiltration via permitted services.

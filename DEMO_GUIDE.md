@@ -178,6 +178,8 @@ Workers run non-root with a read-only root filesystem, dropped capabilities, no 
 
 **Verification limit:** these runtime probes have not run locally because the Docker Engine is unavailable. A valid Compose configuration is not bypass evidence. Containers depend on the trusted kernel, daemon and guardian; they do not protect against a kernel escape or hostile host administrator. The normal desktop demos do not inherit these restrictions.
 
+CI troubleshooting update, 9 October 2026: the supplied Linux runner output reached healthy containers and passed the gateway IPv4/IPv6/protected-storage positive controls, then failed because the DNS probe did not handle an explicit socket permission denial on send. The probe now accepts `SocketError.AccessDenied` during send/receive, or timeout, as blocked DNS; a received response still fails, and unrelated socket errors still surface. The send uses the same cancellation deadline as the receive. This partial CI output does not establish a passing full isolation run; rerun the job after this correction.
+
 ## 7. Phases 5 and 6: real reads and hostile model proposals
 
 ### Phase 5: bounded file-backed document tool
