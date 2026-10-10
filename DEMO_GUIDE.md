@@ -508,3 +508,116 @@ Each run saves ignored `artifacts/comparisons/<id>/comparisons.json` and `summar
 Portable fixtures remain for inspection and do not start services. Raw durable fixture files can contain short-lived synthetic run/approval identifiers; keep those directories private/ignored and publish only selected redacted summaries. No private signing/HMAC keys are saved. Consequential secure runs are stopped after inspection. Container children are supervised with bounded IPC/exit deadlines; only owned processes are killed. Container projects are always removed; cleanup failure fails acceptance. The early failed tmpfs archive-copy attempt is not a successful run; final collection reads evidence through the live owned container before cleanup. Compare earlier effects separately from later ones: stop never undoes a completed publication.
 
 Verified locally on 9 October 2026: all ten portable pairs on Windows and Linux, both Linux container pairs, the full 12-pair aggregate launcher, phase 8 isolated collaboration and the original isolation regression. CI now has Linux/Windows portable comparisons and separate comparison/collaboration container jobs, but a configured job is not a verified remote run. These deterministic fixtures demonstrate specific failure modes; they do not establish production exploitability, arbitrary external exactly-once behavior, general model robustness or distributed provider accounting.
+
+### Desktop launcher readiness diagnostics (9 October 2026)
+
+If `Run-Lab.ps1` reports that the gateway did not become ready, inspect the printed
+`artifacts/gateway-<run>.log` and matching `.err.log` paths. A gateway that answers
+HTTP 400 has started but rejected run creation; this is different from a startup
+or connection timeout. The launcher now fails immediately on non-retryable HTTP
+responses and reports the status and exact log paths. Transport failures and HTTP
+503 are retried within a bounded readiness loop. Local operator HTTP calls bypass
+proxies and have explicit timeouts (PowerShell 7 required).
+
+Rerun from the repository root with:
+
+```powershell
+./scripts/Run-Lab.ps1
+```
+
+Expected: scoped read allowed; external request, messaging and permission changes
+denied; publication requires approval; final effects are one read and zero
+publications. The launcher cleans up its own gateway process and restores its
+environment in `finally`; logs remain for diagnosis. The original user run logged
+HTTP 400, while the same binaries succeeded in the diagnostic PowerShell session.
+The cause was subsequently reproduced: PowerShell coerced null environment values to empty strings during .NET API calls, leaving an empty Lab__PolicyVersion that invalidated the next task grant. The updated
+launcher, file-backed document demo and offline model demo all passed locally.
+
+#### Confirmed fix: preserve absent environment variables
+
+PowerShell's conversion of a null argument to the .NET string parameter could leave
+an empty variable instead of removing it. The durable launcher included
+`Lab__PolicyVersion` in its environment snapshot; restoring an originally absent
+value could create an empty policy version. A later gateway therefore rejected its
+task grant, even though the HTTP listener and credentials worked.
+
+`ProcessEnvironment.ps1` now removes null values through the environment provider
+and preserves intentional empty and nonempty values. The desktop, durable and both
+isolation launchers use it for cleanup/restoration. The basic launcher explicitly
+sets its synthetic policy version. No security validation has been relaxed.
+
+Verified locally: null/empty/nonempty restoration regression; repeated basic runs
+without leaked environment names; basic, durable, basic, document and offline model
+launches in one session starting with an empty policy version; 16 transport checks.
+Release build passed with zero warnings/errors. Container demos were not rerun for
+this environment-only correction; remote CI is pending.
+
+```powershell
+./scripts/Test-ProcessEnvironment.ps1
+./scripts/Run-Lab.ps1
+```
+
+An existing terminal may still contain empty settings left by older launchers. The
+fixed launchers isolate their configuration; open a new PowerShell session before
+running standalone check harnesses if that terminal was already contaminated.
+
+## Refactoring phases R0–R8
+
+The readability upgrade preserves the existing eleven secure use cases and twelve
+comparison pairs. No new worker authority or real resource integration is added.
+Purpose: make each responsibility discoverable and enforce consistent coding style.
+Learning goal: readable abstractions must retain independent security enforcement
+and atomic transitions. Main risk: splitting a coordinator can introduce a race or
+change serialized approval/audit bytes. See docs/ARCHITECTURE.md for lock ownership.
+
+Actors and trust boundaries are unchanged. R0 records the baseline; R1 adds shared
+standards; R2 separates Core/Transport types; R3 separates service hosting/endpoints;
+R4 separates durable persistence and pure binding; R5 separates collaboration
+contracts, endpoints, actors and scoring; R6 names comparison/check cases; R7 reviews
+launchers/docs; R8 verifies acceptance. Current phase status and measured results are
+in docs/REFACTORING_RESULTS.md.
+
+Prerequisites remain PowerShell 7, the pinned .NET 10 SDK and Docker Linux for
+container demos. Start from the repository root. Existing presentation commands and
+expected effect counts remain unchanged. Build and style verification:
+
+```powershell
+dotnet build SecureAgentLab.slnx -c Release
+dotnet format SecureAgentLab.slnx --verify-no-changes --no-restore
+./scripts/Test-SourceLayout.ps1
+./scripts/Test-ProcessEnvironment.ps1
+```
+
+Run the security matrix in docs/CODING_STANDARDS.md and the demo sequence in docs/DEMO_REHEARSAL.md. Expected
+sequence remains scoped reads, refusals, exact approval, recovery/idempotent replay,
+isolation probes, version/usage/containment drill and independently scored teamwork.
+Comparisons still require actual unsafe effects, prevention and a positive control.
+Owned process/container cleanup and evidence retention follow the original scripts.
+The compatibility probe's raw state and keys are private scratch material, not a
+public deliverable. Documentation of successful local checks does not assert a
+remote CI result or production readiness.
+
+Local closeout: 110 Windows checks, 112 Linux checks, all twelve comparison pairs,
+both isolated demos, the desktop sequence, formatter/layout/environment gates and
+original-binary persisted-state compatibility passed. Full evidence and remaining
+remote CI gate are recorded in docs/REFACTORING_RESULTS.md. Demo commands and the
+single consolidated handout remain applicable.
+
+
+## Complete presenter rehearsal reviewed 10 October 2026
+
+Follow [the complete rehearsal checklist](docs/DEMO_REHEARSAL.md) for prerequisites, all eleven use cases, twelve comparison pairs, evidence, cleanup and troubleshooting. Isolation, document and model adapter status notes were corrected to reflect successful local acceptance. The consolidated handout's commands remain applicable. No new complete demo runtime is claimed for this documentation review.
+
+## Folder namespaces 10 October 2026
+
+Purpose: make each type's namespace reflect its responsibility folder, including check cases and fixtures. No new demonstration or authority is added. Callers must update C# imports and rebuild the whole solution before running the existing rehearsal commands; stale binaries should not be mixed. Security risks are accidental contract substitutions or lost helper imports, so verification includes the executable security matrix and desktop/paired demonstrations. Runtime commands, boundaries, effects, evidence and cleanup remain as described in docs/DEMO_REHEARSAL.md. Migration verification is recorded in docs/REFACTORING_RESULTS.md; prior acceptance does not automatically validate this change.
+
+## Documentation cleanup 10 October 2026
+
+Completed refactoring and comparison planning files were removed after their current run instructions, validation and limitations were retained in the coding standards, rehearsal checklist, consolidated handout and execution record. README links point to those maintained documents. The original roadmap and future pilot gate remain available. No demonstration behavior changed.
+
+## Bounded artifact retention
+
+Purpose: prevent repeated synthetic checks/demos from accumulating storage. Each case uses a fixed latest directory; run.json identifies the attempt with a monotonically increasing RunNumber and timestamps. Calls, credentials, approval IDs and Docker project IDs remain random where needed for isolation/security. The whole artifact set is replaced only after obtaining the case lease, before starting its new hosts or fixtures. Concurrent use of the same case is rejected. Cleanup removes fixture links without traversing their targets and rejects linked ownership/counter paths.
+
+Run ./scripts/Test-ArtifactRetention.ps1 to verify overwrite, counters, active-run exclusion, link safety and invalid path/counter rejection. Run the rehearsal twice to observe stable paths and advancing numbers. Current evidence is retained until that case runs again; explicitly copy important failures outside artifacts first. FinishedUtc is a lifecycle timestamp, not a success verdict. Existing demos keep their security decisions/effects and process/container cleanup. The detailed paths and comparison-selection behavior are in docs/DEMO_REHEARSAL.md. This lab policy must not be used for production signed-audit retention.

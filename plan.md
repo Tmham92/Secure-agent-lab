@@ -8,7 +8,7 @@ Repository: https://github.com/Tmham92/Secure-agent-lab
 
 Read README.md and DEMO_GUIDE.md for the threat model, demonstration commands and evidence. The milestones below retain their original acceptance requirements.
 
-## Current status as of 9 October 2026
+## Current status as of 10 October 2026
 
 | Original phase | Implementation and verification | Remaining scope |
 |---|---|---|
@@ -23,7 +23,7 @@ Read README.md and DEMO_GUIDE.md for the threat model, demonstration commands an
 
 All eight phases now have synthetic lab implementations, with the limits above. The phase 8 isolated topology now also passes local bypass/workspace checks and independent scoring. Remote CI for these changes and the real production pilot gate remain unfinished; synthetic provider accounting and local coordination do not satisfy production integration requirements. No production deployment or broad autonomy has been enabled.
 
-The before-and-after educational extension in [comparison-demo-plan.md](comparison-demo-plan.md), phases A to E, is now implemented: 10 portable pairs plus 2 container pairs, all locally verified. A reviewable future pilot gate is prepared in [docs/PILOT_READINESS.md](docs/PILOT_READINESS.md); no real pilot is approved. The presenter handout is maintained in [docs/Secure_Agent_Lab_Handout.docx](docs/Secure_Agent_Lab_Handout.docx), with editable text alongside it. Extend DEMO_GUIDE.md and the handout when each comparison phase finishes.
+The before-and-after educational extension in [the consolidated handout](docs/Secure_Agent_Lab_Handout.md), phases A to E, is now implemented: 10 portable pairs plus 2 container pairs, all locally verified. A reviewable future pilot gate is prepared in [docs/PILOT_READINESS.md](docs/PILOT_READINESS.md); no real pilot is approved. The presenter handout is maintained in [docs/Secure_Agent_Lab_Handout.docx](docs/Secure_Agent_Lab_Handout.docx), with editable text alongside it. Extend DEMO_GUIDE.md and the handout when each comparison phase finishes.
 
 ## Desktop setup and first commit
 
@@ -220,3 +220,14 @@ Each implementation milestone should be a reviewable pull request containing cha
 > Read README.md and plan.md in Secure-agent-lab. Implement milestone 1 only: a .NET 10 solution with Core, Demo and dependency-free executable Checks projects. Create the host-owned default-deny gateway, synthetic read/publication tools, scoped sessions, one-time exact-action approvals, expiry, atomic quotas, revocation, global stop and hash-chained audit described in the plan. Use TimeProvider for deterministic expiry tests. Add the listed security checks and GitHub Actions. Run the build, checks and demo, fix failures, and update the README to distinguish implemented controls from simulations and future work. Keep all resources synthetic and do not add model keys or live targets. Prepare a feature-branch commit for review.
 
 Then use the numbered prompts at the end of README.md to extend the project one milestone at a time.
+
+## Maintainability upgrade R0–R8
+
+The completed maintainability work and its validation are recorded in docs/REFACTORING_RESULTS.md. It preserves the original phase 1–8 capabilities and comparison scenarios. Coding standards, responsibility folders, individual types, smaller hosts and named checks are implemented; Windows/Linux regression, compatibility and container deployment verification passed locally and are recorded in the execution results. Remote CI for the working-tree changes remains pending.
+
+
+Documentation review on 10 October: see docs/DEMO_REHEARSAL.md for the complete run order. Full Release build and 110 Windows checks passed again; prior Linux/container acceptance remains dated 9 October, with remote CI pending.
+
+Namespace follow-up on 10 October: source and check namespaces now follow project folders; imports and qualified references are updated together. This supersedes retaining old C# namespaces. Demo commands and serialized contracts remain unchanged; migration verification is tracked in docs/REFACTORING_RESULTS.md.
+
+Artifact retention follow-up: cases now overwrite a single latest artifact set and store attempt numbers in run.json, backed by persistent counters under artifacts/.runs. Cross-run fixtures are reset; state recovery inside each demo remains intact. Retention regression and repeat-run validation are recorded in docs/REFACTORING_RESULTS.md.

@@ -54,12 +54,12 @@ the read-only-root startup failure captured in `securelab-b987cf7c3d24` diagnost
 Before the bypass scenarios, a separate restricted worker runs `--relay-readiness`:
 an unauthenticated POST through the relay must return backend 401 within ten bounded
 attempts. This proves the permitted worker/relay/backend path without adding tool effects.
-On failure, worker console output is retained in `artifacts/isolation/<project>/worker-*.log`.
+On failure, worker console output is retained in `artifacts/isolation/latest/worker-*.log`.
 Before deleting containers, the launcher saves service status, relay logs/identity/config
 validation and IPv4/IPv6 firewall counters as `diagnostics-*.txt`. It never dumps full
 container environment/inspection or issuer credentials. Failed CI jobs upload only these
 diagnostic files as `isolation-diagnostics` for seven days. Actions run #2 passed Linux
-and Windows checks, but timed out on relay HTTP; full isolation acceptance remains pending.
+and Windows checks, but timed out on relay HTTP. Subsequent local runs with the relay fixes passed; remote isolation CI for the final revision remains pending.
 
 The operator confirms the backend is alive on **both IPv4 and IPv6** and that a protected
 other-run storage canary exists. The worker then bypasses its normal client with direct
@@ -89,6 +89,4 @@ boundary. Fixed distinct UIDs are essential: do not run an untrusted process und
 gateway/relay UID or add another network attachment. Loopback and network metadata
 are shared, so this does not claim kernel-level separation of trusted services.
 
-Locally, the .NET build and existing checks pass; Compose and script syntax validate.
-The Docker Engine remained unavailable even after requesting Docker Desktop startup, so **container bypass tests
-have not yet been executed**. Phase 4 acceptance remains pending a successful run.
+Local container acceptance passed again after refactoring on 9 October 2026: both workers passed bypass/deployment checks and authorized proposals; two reads, zero publications and the protected canary unchanged. The full 17-project Release build and 110 Windows checks passed again on 10 October. Remote CI remains a separate pending gate. See ../../docs/DEMO_REHEARSAL.md for a complete demo run.

@@ -47,7 +47,7 @@ Desktop demos still share the Windows account, so they demonstrate gateway enfor
 not resistance to direct OS access. The container deployment now mounts the generated
 fixture tree read-only **only into the gateway**, as `/protected/documents`. The worker
 does not receive that mount or document-root configuration and must use the proposal relay.
-Container runtime acceptance remains pending the phase 4 Docker tests.
+Container runtime acceptance passed locally on 9 October 2026; remote CI for the final revision remains pending.
 
 ## File boundary and failures
 
@@ -84,5 +84,4 @@ ownership remain trusted; this is not a general hostile-filesystem or remote-sha
 Release build: zero warnings/errors. Windows: **14/14 document checks** and the separate
 file-backed demo passed. Existing 17 offline, 16 transport and 20 durable checks are
 regression requirements. CI now runs the document harness on both Linux and Windows.
-Linux adds final-file symlink and FIFO probes (**16 checks total**); these have not yet
-run locally. Linux container integration also remains unverified until Docker is available.
+Linux adds final-file symlink and FIFO probes (**16 checks total**); all sixteen passed locally in the refactoring acceptance run on 9 October 2026. Windows document checks passed again on 10 October. The full isolation demo also passed locally; its deployment boundaries and remaining remote CI gate are documented separately in deploy/isolation/README.md.

@@ -87,11 +87,4 @@ in isolated secret storage, DNS/egress policy, retention, monetary limits and an
 tool loop need a separately reviewed deployment. Desktop workers retain the desktop-demo
 OS limitations. No paid model call was run during implementation.
 
-Local API/worker Release builds pass with zero warnings/errors. The new host and check
-sources were compiled directly with the installed .NET 10 compiler and framework
-references; **12 offline model checks**, including durable-gateway effects and audit, pass. Full solution SDK restore currently cannot
-read the user's NuGet configuration despite requested read permission, so normal SDK
-build/restore of the two new projects remains unverified locally. The authenticated
-offline model demo passes, including a parent key canary that must not reach the worker.
-CI is configured to build and run the full projects normally on Linux/Windows; remote
-CI, live API compatibility and Docker integration remain unverified.
+The complete 17-project solution restores and builds normally with SDK 10.0.400 and zero warnings/errors; it passed again on 10 October 2026. All twelve offline model checks passed on Windows on 10 October and Linux on 9 October. The authenticated offline model demo passed during refactoring acceptance, including the parent key canary check. Earlier NuGet-configuration access failures were resolved for these successful builds. Remote CI for the working-tree revision and optional live API compatibility remain unverified. The isolated gateway demos do not add live provider access.

@@ -1,8 +1,10 @@
 # Secure Agent Lab — a .NET controlled-autonomy POC
 
-Presenter resources: [Word handout](docs/Secure_Agent_Lab_Handout.docx), [editable handout text](docs/Secure_Agent_Lab_Handout.md), and [safeguard comparison demos](comparison-demo-plan.md).
+Complete test run: [step-by-step rehearsal checklist](docs/DEMO_REHEARSAL.md), reviewed 10 October 2026. The full solution and all 110 Windows checks passed again on that date.
 
-Current roadmap: original phases 1 to 7 have synthetic lab implementations, including the user's successful local container isolation run. Phase 8 now has a synthetic authenticated broker and separate evaluator (local checks, desktop demo and isolated two-agent topology verified; new remote CI pending); provider accounting, multi-host coordination and the production pilot gate remain unfinished. All comparison phases A–E are implemented and all 12 pairs pass locally. Pilot readiness is documented in `docs/PILOT_READINESS.md`; a live pilot is not approved. See [the current status table](plan.md#current-status-as-of-9-october-2026) for verification details; older validation notes below describe earlier stages.
+Presenter resources: [Word handout](docs/Secure_Agent_Lab_Handout.docx), [editable handout text](docs/Secure_Agent_Lab_Handout.md), and [safeguard comparison demos](docs/DEMO_REHEARSAL.md#run-every-unsafe-versus-secure-comparison).
+
+Current roadmap: original phases 1 to 7 have synthetic lab implementations, including the user's successful local container isolation run. Phase 8 now has a synthetic authenticated broker and separate evaluator (local checks, desktop demo and isolated two-agent topology verified; new remote CI pending); provider accounting, multi-host coordination and the production pilot gate remain unfinished. All comparison phases A–E are implemented and all 12 pairs pass locally. Pilot readiness is documented in `docs/PILOT_READINESS.md`; a live pilot is not approved. See [the current status table](plan.md#current-status-as-of-10-october-2026) for verification details; older validation notes below describe earlier stages.
 
 Read [the complete demo guide](DEMO_GUIDE.md) for every component and phase: purpose, security issue, exact commands, expected effects, evidence, cleanup and limitations. Extend this guide after each finished phase, as required by AGENTS.md.
 
@@ -549,3 +551,9 @@ Use one prompt per milestone. Give your coding assistant this repository and req
 ### Prompt 12 — supervised pilot readiness
 
 > Review the complete architecture and run an incident exercise: injected source text, attempted out-of-scope access, approval mismatch, quota exhaustion, audit outage and emergency shutdown. Produce evidence of execution effects, containment timing and recovery. Update the README with implemented versus planned controls and residual risks. Prepare a reviewable pilot plan with small scope and explicit exit criteria; do not deploy production changes or enable broad autonomy automatically.
+
+## Coding standards and refactoring
+
+See [coding standards](docs/CODING_STANDARDS.md), [architecture and transaction ownership](docs/ARCHITECTURE.md) and [execution results](docs/REFACTORING_RESULTS.md). Existing demo commands remain compatible. Namespaces follow project folders; source consumers must update imports and rebuild. Build with the SDK selected by global.json; CI also verifies formatting, source layout and environment restoration. Refactoring acceptance is recorded separately from the original demo roadmap.
+
+Artifacts now retain one latest set per case under artifacts/<case>/latest, with an incrementing RunNumber in run.json. Each new attempt replaces that case's previous evidence; save needed diagnostics elsewhere before rerunning. Counters persist under artifacts/.runs. See docs/DEMO_REHEARSAL.md for paths and scripts/Clear-LegacyArtifacts.ps1 for older generated histories.

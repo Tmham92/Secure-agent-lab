@@ -9,8 +9,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - run: dotnet build SecureAgentLab.slnx --configuration Release
+      - run: dotnet format SecureAgentLab.slnx --verify-no-changes --no-restore
+      - shell: pwsh
+        run: |
+          ./scripts/Test-ProcessEnvironment.ps1
+          ./scripts/Test-ArtifactRetention.ps1
+          ./scripts/Test-SourceLayout.ps1
       - run: dotnet run --project tests/SecureAgentLab.Checks --configuration Release --no-build
       - run: dotnet run --project src/SecureAgentLab.Demo --configuration Release --no-build
       - run: dotnet run --project tests/SecureAgentLab.TransportChecks --configuration Release --no-build
@@ -28,8 +34,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - run: dotnet build SecureAgentLab.slnx --configuration Release
+      - run: dotnet format SecureAgentLab.slnx --verify-no-changes --no-restore
+      - shell: pwsh
+        run: |
+          ./scripts/Test-ProcessEnvironment.ps1
+          ./scripts/Test-ArtifactRetention.ps1
+          ./scripts/Test-SourceLayout.ps1
       - name: All 12 safeguard comparison pairs
         shell: pwsh
         run: ./scripts/Run-ComparisonLab.ps1 -Scenario all
@@ -39,12 +51,13 @@ jobs:
         with:
           name: comparison-evidence
           path: |
-            artifacts/comparisons/*/comparisons.json
-            artifacts/comparisons/*/summary.md
-            artifacts/comparisons/*/capture.json
-            artifacts/comparisons/*/*-containment.json
-            artifacts/comparisons/*/*-isolation.json
-            artifacts/comparisons/*/*-deployment.json
+            artifacts/comparisons/*/latest/comparisons.json
+            artifacts/comparisons/*/latest/summary.md
+            artifacts/comparisons/*/latest/run.json
+            artifacts/comparisons/*/latest/capture.json
+            artifacts/comparisons/*/latest/*-containment.json
+            artifacts/comparisons/*/latest/*-isolation.json
+            artifacts/comparisons/*/latest/*-deployment.json
           retention-days: 7
           if-no-files-found: ignore
   collaboration-isolation:
@@ -86,8 +99,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
       - run: dotnet build SecureAgentLab.slnx --configuration Release
+      - run: dotnet format SecureAgentLab.slnx --verify-no-changes --no-restore
+      - shell: pwsh
+        run: |
+          ./scripts/Test-ProcessEnvironment.ps1
+          ./scripts/Test-ArtifactRetention.ps1
+          ./scripts/Test-SourceLayout.ps1
       - shell: pwsh
         run: ./scripts/Run-ResponseDrill.ps1
       - run: dotnet run --project tests/SecureAgentLab.DocumentChecks --configuration Release --no-build
