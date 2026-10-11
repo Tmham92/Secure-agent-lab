@@ -231,3 +231,5 @@ Documentation review on 10 October: see docs/DEMO_REHEARSAL.md for the complete 
 Namespace follow-up on 10 October: source and check namespaces now follow project folders; imports and qualified references are updated together. This supersedes retaining old C# namespaces. Demo commands and serialized contracts remain unchanged; migration verification is tracked in docs/REFACTORING_RESULTS.md.
 
 Artifact retention follow-up: cases now overwrite a single latest artifact set and store attempt numbers in run.json, backed by persistent counters under artifacts/.runs. Cross-run fixtures are reset; state recovery inside each demo remains intact. Retention regression and repeat-run validation are recorded in docs/REFACTORING_RESULTS.md.
+
+CI portability correction: isolation jobs install the SDK from global.json and build Release before their artifact helper loads Core. Git enforces LF text checkout through .gitattributes, matching .editorconfig on Windows and Linux. Demo commands and security behavior are unchanged. Local validation is recorded in docs/REFACTORING_RESULTS.md; a new GitHub run is required to confirm hosted results.

@@ -65,6 +65,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet build SecureAgentLab.slnx --configuration Release
       - name: Isolated phase 8 agents and independent evaluator
         shell: pwsh
         run: ./scripts/Run-IsolatedCollaborationLab.ps1
@@ -80,6 +84,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet build SecureAgentLab.slnx --configuration Release
       - name: Container isolation and independent bypass checks
         shell: pwsh
         run: ./scripts/Run-IsolatedLab.ps1

@@ -1,0 +1,9 @@
+# Match .editorconfig on every runner, including Windows with core.autocrlf=true.
+* text=auto eol=lf
+
+# Preserve binary documents and media without text conversion.
+*.docx binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.zip binary
