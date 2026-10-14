@@ -1,0 +1,103 @@
+@page "/advanced"
+@rendermode InteractiveServer
+@using SecureAgentLab.Playground.Advanced
+@inject AdvancedProcessRunner Runner
+@implements IDisposable
+<PageTitle>Advanced scenarios — Agent Security Lab</PageTitle>
+<main>
+    <nav class="lab-nav"><a href="/">Basic playground · 6 scenarios</a><a href="/advanced" aria-current="page">Advanced scenarios · 14 exercises</a></nav>
+    <header><span class="eyebrow">SECURE AGENT LAB / ADVANCED EXERCISES</span><h1>Test the deeper security boundaries.</h1><p>Run the repository's actual comparison and security-check executables. Inspect measured effects and positive controls.</p><span class="badge">10 runnable comparisons</span> <span class="badge">2 runnable check suites</span> <span class="badge">2 guided Docker labs</span></header>
+    <section class="panel">
+        <h2>Choose an advanced exercise</h2>
+        <label>Scenario<select aria-label="Advanced scenario" value="@selectedId" @onchange="Select" disabled="@(busy || !interactive)">
+            @foreach (string category in AdvancedCatalog.All.Select(s => s.Category).Distinct())
+            {
+                <optgroup label="@category">@foreach (AdvancedScenario scenario in AdvancedCatalog.All.Where(s => s.Category == category)) { <option value="@scenario.Id">@scenario.Title</option> }</optgroup>
+            }
+        </select></label>
+        <div class="explanation"><p><strong>Attack:</strong> @Selected.Attack</p><p><strong>Defense:</strong> @Selected.Defense</p><p><strong>Expected result:</strong> @Selected.Expected</p></div>
+        @if (Selected.Project is null)
+        {
+            <p class="notice">This exercise needs Docker running in Linux container mode and a repository terminal with PowerShell. The existing launcher creates disposable containers, checks their boundaries, saves evidence and cleans up. It is not started by the web host.</p>
+        }
+        else
+        {
+            <p class="muted">Runs fixed synthetic inputs in a separate process with a 90-second timeout and bounded output. One advanced run at a time across browser sessions. No model credentials or paid provider calls are used. This process boundary is not an OS sandbox.</p>
+        }
+        <h3>Equivalent terminal command</h3><pre>@Selected.Command</pre>
+        @if (Selected.EvidenceCase is { } evidence) { <p>Saved evidence: <code>artifacts/@evidence/latest</code>. The next run of this exercise replaces its latest evidence; result snapshots below remain in this browser circuit.</p> }
+        <div class="buttons">
+            @if (Selected.Project is not null) { <button disabled="@(busy || !interactive)" @onclick="RunSelected">Run selected exercise</button> }
+            <button class="secondary" disabled="@(busy || !interactive)" @onclick="RunComparisons">Run all 10 comparisons</button>
+            <button class="secondary" disabled="@(!busy)" @onclick="Cancel">Cancel advanced run</button>
+            <button class="secondary" disabled="@busy" @onclick="Clear">Clear displayed results</button>
+        </div>
+        <p role="status" aria-live="polite">@status</p>
+        <p class="muted">Clear removes this circuit's displayed results only. Saved evidence remains on disk under the repository's bounded artifact-retention policy. Original command-line demonstrations remain available.</p>
+    </section>
+    <h2>Results (@results.Count)</h2>
+    @foreach (AdvancedResult result in results.AsEnumerable().Reverse())
+    {
+        AdvancedScenario scenario = AdvancedCatalog.Find(result.ScenarioId);
+        <section class="panel" @key="result">
+            <h3>@scenario.Title</h3><p class="@(result.Status == "Passed" ? "safe" : "danger")">@result.Status</p>
+            <p>Elapsed: @result.ElapsedMilliseconds ms · Exit code: @(result.ExitCode?.ToString() ?? "not available")</p>
+            @if (result.Comparison is { } pair)
+            {
+                <p><strong>Input:</strong> @pair.Input</p><p><strong>Safeguard:</strong> @pair.MissingSafeguard</p>
+                <div class="results">
+                    @foreach (AdvancedObservation observation in new[] { pair.Unsafe, pair.Secure })
+                    {
+                        <div class="observation"><h4>@(observation.Variant == "unsafe" ? "Vulnerable baseline" : "Hardened")</h4><p>@observation.Decision</p><p class="@(observation.PositiveControl ? "safe" : "danger")">Legitimate positive control: @(observation.PositiveControl ? "Passed" : "Failed")</p>
+                            <dl>@foreach (var effect in observation.Effects) { <dt>@effect.Key</dt><dd><pre>@effect.Value.ToString()</pre></dd> }</dl>
+                        </div>
+                    }
+                </div>
+                <details><summary>Input fingerprint</summary><pre>@pair.InputSha256</pre></details>
+            }
+            else { <p class="muted">Check-suite results are shown in the captured output; no baseline comparison is claimed.</p> }
+            <details open="@(result.Status != "Passed")"><summary>Actual runner output</summary><pre>@result.Output</pre></details>
+        </section>
+    }
+    <footer>PASS requires successful execution and, for comparisons, the baseline failure, absent hardened failure and legitimate positive controls. Docker command cards are instructions, not evidence of a completed run.</footer>
+</main>
+@code {
+    private string selectedId = "audit";
+    private AdvancedScenario Selected => AdvancedCatalog.Find(selectedId);
+    private readonly List<AdvancedResult> results = [];
+    private CancellationTokenSource? cancellation;
+    private bool busy;
+    private bool interactive;
+    private bool disposed;
+    private string status = "Ready";
+    protected override void OnAfterRender(bool firstRender) { if (firstRender) { interactive = true; StateHasChanged(); } }
+    private void Select(ChangeEventArgs args) { string? id = args.Value?.ToString(); if (!busy && AdvancedCatalog.All.Any(s => s.Id == id)) { selectedId = id!; } }
+    private Task RunSelected() => Run([Selected]);
+    private Task RunComparisons() => Run(AdvancedCatalog.All.Where(s => s.Category == "Baseline vs hardened").ToArray());
+    private async Task Run(AdvancedScenario[] scenarios)
+    {
+        if (busy) { return; }
+        busy = true;
+        cancellation = new();
+        try
+        {
+            foreach (AdvancedScenario scenario in scenarios)
+            {
+                if (cancellation.IsCancellationRequested) { break; }
+                status = "Running: " + scenario.Title;
+                StateHasChanged();
+                AdvancedResult result = await Runner.RunAsync(scenario.Id, cancellation.Token);
+                if (disposed) { return; }
+                if (results.Count == 14) { results.RemoveAt(0); }
+                results.Add(result);
+                status = scenario.Title + ": " + result.Status;
+                if (result.Status != "Passed") { break; }
+            }
+        }
+        catch (OperationCanceledException) { status = "Advanced run cancelled"; }
+        finally { cancellation.Dispose(); cancellation = null; busy = false; }
+    }
+    private void Cancel() => cancellation?.Cancel();
+    private void Clear() { if (!busy) { results.Clear(); status = "Ready"; } }
+    public void Dispose() { disposed = true; cancellation?.Cancel(); }
+}

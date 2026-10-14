@@ -3,7 +3,10 @@ param([ValidateSet('both','isolation','containment')][string]$Scenario = 'both')
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'ArtifactRuns.ps1')
+. (Join-Path $PSScriptRoot 'DemoOutput.ps1')
 $artifactRun = Start-LabArtifactRun -Repository $repo -Case 'comparisons/container'
+$presentation = Start-LabPresentation -Case $artifactRun.CaseName -Directory $artifactRun.DirectoryPath -RunNumber $artifactRun.RunNumber
+$demoSucceeded = $false
 try {
     $project = 'compare-' + [Guid]::NewGuid().ToString('N').Substring(0,12)
     $compose = Join-Path $repo 'deploy/comparisons/compose.yml'
@@ -11,6 +14,13 @@ try {
     $savedEvidence = $env:COMPARISON_EVIDENCE; $savedSecret = $env:COMPARISON_FAKE_SECRET
     $watch = [Diagnostics.Stopwatch]::StartNew()
     function Compose([string[]]$Arguments) {
+        if ($Arguments[0] -eq 'build') {
+            $buildLog = Join-Path $artifactRun.DirectoryPath 'build.log'
+            Write-Host "Building containers; detailed output: $buildLog"
+            & docker compose -p $project -f $compose @Arguments *> $buildLog
+            if ($LASTEXITCODE -ne 0) { Get-Content -LiteralPath $buildLog -Tail 20 | Out-Host; throw "Container build failed; inspect $buildLog" }
+            return
+        }
         $result = & docker compose -p $project -f $compose @Arguments
         if ($LASTEXITCODE -ne 0) { throw "Container comparison failed: $($Arguments[0])" }
         return $result
@@ -95,4 +105,5 @@ try {
         if ($cleanup -ne 0) { throw "Cleanup failed for owned project $project" }
     }
 
-} finally { $artifactRun.Dispose() }
+    $demoSucceeded = $true
+} finally { try { Complete-LabPresentation $presentation $demoSucceeded } finally { $artifactRun.Dispose() } }

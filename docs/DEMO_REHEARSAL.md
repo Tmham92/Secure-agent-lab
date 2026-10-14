@@ -1,6 +1,10 @@
 # Complete demo rehearsal
 
-Reviewed 10 October 2026 against the current launchers. Use this checklist for the run order and the single Secure_Agent_Lab_Handout.docx for explanations. DEMO_GUIDE.md contains detailed trust boundaries and recovery. All examples use synthetic data. The default model demo is offline and needs no API key.
+Documentation reviewed 12 October 2026 against the current launchers. This review does not establish a new full rehearsal or hosted CI result. Use this checklist for the run order and the single Secure_Agent_Lab_Handout.docx for explanations. DEMO_GUIDE.md contains detailed trust boundaries and recovery. All examples use synthetic data. The default model demo is offline and needs no API key.
+
+## Browser learning path
+
+Run `./scripts/Run-Playground.ps1`. At http://127.0.0.1:5080 compare injection modes and review exact-message approval. At /advanced run comparisons and inspect measured effects/positive controls. Durable/collaboration suites run from the UI; Docker exercises show commands/prerequisites. See [playground instructions](playground.md) and [verification](playground-verification.md). The infrastructure presentation below retains its original run order and handout.
 
 ## Prepare
 
@@ -70,4 +74,19 @@ Each case reuses artifacts/<case>/latest. Read run.json for RunNumber, StartedUt
 Comparison evidence uses artifacts/comparisons/portable/latest, artifacts/comparisons/container/latest and artifacts/comparisons/suite/latest. The suite index links the current sets. An individual portable comparison replaces the previous portable selection; rerun all for a complete twelve-pair overview. Fixture subdirectories use stable case numbers and the entire case set is reset before its next attempt. Recovery keeps multiple state/audit files within a run; it does not reuse old state across demonstrations.
 
 Only reviewed summaries should be shared. This overwrite policy is for disposable synthetic lab data, not production audit retention. scripts/Clear-LegacyArtifacts.ps1 removes recognized older generated histories while preserving latest sets, counters and unknown files.
+## Descriptive demo output and artifact guides
 
+All ten Run-*.ps1 demo entry points now introduce the purpose, print numbered stages and end with an explicit PASS or FAILED result. A denied attack is an expected security success; gateway decisions include plain-language explanations. Container build details go to a fixed build.log; a failed build shows its final diagnostics and the full log path. Run-Lab and Run-DurableLab also retain worker-decisions.log and effects.json, which records operator-observed tool-effect counts.
+
+Commands and prerequisites remain unchanged: build Release first; use PowerShell 7 and Linux Docker for the container demos. The offline model demo requires no API key. Existing actor boundaries, synthetic effects and cleanup remain unchanged. Presentation uses the host stream so machine-readable comparison return objects remain usable by the suite script.
+
+Each demo writes artifacts/<case>/latest/artifact-index.md with the run number, completion result and relative links to existing files, describing their contents and significance. Document/model wrappers link their companion gateway guide; the comparison suite links the selected evidence sets. These indexes and logs are overwritten with the next run, under the existing retention policy. Terminal links use OSC 8 when virtual-terminal support is available; otherwise full local paths remain visible. Open the Markdown guide when the terminal does not support clickable links.
+
+The index lists filenames, not file contents. Private runtime material is identified for review before sharing; file descriptions are guidance based on names, not a new verification of contents. Lifecycle metadata and fixture existence alone do not establish a security verdict. Failed invocations show FAILED and can retain partial evidence; original exceptions still propagate. Refer to the existing per-demo sections for threat, actors, exact commands, expected effects and limitations. No live model calls or production changes are part of presenter validation.
+
+
+## Explain the printed code flow
+
+Before each scenario, read its How this demo connects to the code section aloud. Identify the coordinator, the untrusted proposal or agent, the enforcing C# component or container boundary, and the measured effect. Document/model demos include the gateway in their own flow, share one continuous stage sequence with it and show one final result. The gateway evidence guide is generated quietly and linked from the final summary. Distinguish offline fixture input from explicit live model calls, local collaboration services from isolated containers, and a gateway denial from a measured direct-network bypass. For the per-script mapping see [the code-flow guide](../DEMO_GUIDE.md#code-flows-for-every-demo-script) and the consolidated handout. Rebuild host-run Release DLLs after C# changes.
+
+At completion, open artifact-index.md in the printed latest directory; check its run number, result and selected companion guides. Check measured effects, not only individual PASS lines, and save needed evidence before the next overwrite. Local verification and its dates are recorded in REFACTORING_RESULTS.md.

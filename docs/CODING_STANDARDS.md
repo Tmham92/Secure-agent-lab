@@ -38,7 +38,7 @@ Keep vulnerable comparison implementations visibly separate from secure hosts. P
 
 Checks use named behavior cases with explicit dependencies and separate fixtures. Preserve case identities and assertions. Console harnesses remain intentional: dotnet test does not discover them. Use deterministic clocks for expiry and bounded actual process/network probes for deployment boundaries.
 
-Run these commands from the repository root. Expect 110 checks on Windows or 112 on Linux, where document checks add final-symlink and FIFO probes.
+Run these commands from the repository root. Expect 133 checks on Windows or 135 on Linux (110/112 original checks plus 23 playground checks), where document checks add final-symlink and FIFO probes.
 
 ```powershell
 dotnet build SecureAgentLab.slnx -c Release
@@ -52,6 +52,7 @@ dotnet run --project tests/SecureAgentLab.DurableChecks -c Release --no-build --
 dotnet run --project tests/SecureAgentLab.DocumentChecks -c Release --no-build
 dotnet run --project tests/SecureAgentLab.ModelChecks -c Release --no-build
 dotnet run --project tests/SecureAgentLab.CollaborationChecks -c Release --no-build
+dotnet run --project tests/SecureAgentLab.PlaygroundChecks -c Release --no-build
 ```
 
 Complete acceptance also requires the desktop sequence, both isolated demos and all twelve comparison pairs in DEMO_REHEARSAL.md. Run relevant checks after changes and the full matrix before closeout. Compare case identities as well as totals. Inspect final effects and completion; one PASS is insufficient. Record local validation and remote CI separately.

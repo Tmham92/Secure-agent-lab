@@ -1,0 +1,99 @@
+@page "/"
+@rendermode InteractiveServer
+@inject LabSession Session
+@implements IDisposable
+<PageTitle>Agent Security Lab</PageTitle>
+<main>
+    <nav class="lab-nav"><a href="/" aria-current="page">Basic playground · 6 scenarios</a><a href="/advanced">Advanced scenarios · 14 exercises</a></nav>
+    <header><span class="eyebrow">SECURE AGENT LAB / INTERACTIVE PLAYGROUND</span><h1>See the attack. Test the boundary.</h1>
+    <p>Explore how an agent's tool access changes the outcome of the same request.</p>
+    <span class="badge">Local only</span> <span class="badge">Synthetic data</span> <span class="badge">No real messages</span></header>
+    <section class="panel">
+        <h2>1. Set up an experiment</h2>
+        <div class="controls">
+            <label>Scenario<select aria-label="Scenario" value="@scenarioId" @onchange="SelectScenario" disabled="@(Session.Busy || !interactive)">@foreach (var s in Scenarios.All) { <option value="@s.Id">@s.Title</option> }</select></label>
+            <label>Security mode<select aria-label="Security mode" @bind="securityMode" disabled="@(Session.Busy || !interactive)"><option value="hardened">Hardened</option><option value="baseline">Baseline (deliberately vulnerable)</option></select></label>
+            <label>Execution<select aria-label="Execution" @bind="executionMode" disabled="@(Session.Busy || !interactive)"><option value="scripted">Scripted (deterministic)</option><option value="live" disabled="@(!Session.LiveAvailable)">Live model (variable results)</option></select></label>
+            <label>Hardened call limit<input aria-label="Hardened call limit" type="number" min="2" max="16" @bind="limit" disabled="@(Session.Busy || !interactive)" /></label>
+        </div>
+        <p><strong>Legitimate task:</strong> Read the support ticket and write a short summary.</p>
+        <div class="explanation"><p><strong>Attack:</strong> @Selected.Attack</p><p><strong>Defense:</strong> @Selected.Defense</p><p><strong>Existing deeper exercise:</strong> @Selected.ExistingDemo — see the repository's comparison demos.</p></div>
+        <label>Untrusted document<textarea aria-label="Untrusted document" @bind="document" maxlength="8000" rows="7" disabled="@(Session.Busy || !interactive)"></textarea></label>
+        <p class="muted">Scripted mode follows the selected attack script; editing prose changes the input and summary, not the scripted tool sequence. Live mode lets the model interpret your edits. Neither a model refusal nor a scripted attack proves general security.</p>
+        @if (!Session.LiveAvailable) { <p class="muted">Live mode is disabled. Configure OPENAI_API_KEY and LAB_OPENAI_MODEL on the server, then restart. Scripted mode needs no credentials.</p> }
+        @if (live) { <p class="notice">Only enter synthetic text. This document and bounded tool results will be sent to the configured OpenAI model. Each run can make up to 8 requests; comparison runs can make up to 16. Provider charges apply; there is no monetary cost meter.</p> }
+        <div class="buttons"><button @onclick="Run" disabled="@(Session.Busy || !interactive)">Run experiment</button><button class="secondary" @onclick="Compare" disabled="@(Session.Busy || !interactive)">Compare both modes</button><button class="secondary" @onclick="Session.Cancel" disabled="@(!Session.Busy)">Cancel</button><button class="secondary" @onclick="Reset" disabled="@(Session.Busy || !interactive)">Reset my lab</button></div>
+        @if (error.Length > 0) { <p role="alert">@error</p> }
+        <p role="status" aria-live="polite">@(Session.Busy ? "Running — tool decisions appear below…" : "Ready")</p>
+    </section>
+    <h2>2. Inspect what actually executed</h2>
+    <div class="results">
+    @foreach (LabRun run in Session.Runs)
+    {
+        <section class="panel" @key="run.Id">
+            <h3>@(run.Hardened ? "Hardened" : "Vulnerable baseline")</h3><p>@run.Status</p>
+            <div class="metrics"><span><strong>@run.Calls / @run.Limit</strong> calls</span><span><strong>@run.Trace.Count(t => !t.Decision.Allowed)</strong> denied</span><span><strong>@run.ElapsedMilliseconds ms</strong> elapsed</span></div>
+            <p class="@(run.Leaked ? "danger" : "safe")">Fake secret in outbox: @(run.Leaked ? "YES" : "NO")</p>
+            <p>Summary produced: @(run.Summary.Length > 0 ? "Yes" : "No") · Unreviewed sends executed: @(run.Hardened ? 0 : run.Outbox.Length)</p>
+            <h4>Summary</h4><pre>@(run.Summary.Length == 0 ? "No summary written." : run.Summary)</pre>
+            <h4>Tool decisions</h4>
+            @foreach (TraceEntry entry in run.Trace)
+            {
+                <details open><summary><span class="@(entry.Decision.Allowed ? "safe" : "danger")">@(entry.Decision.Allowed ? "ALLOWED" : "BLOCKED")</span> @entry.Number. @entry.Call.Tool</summary>
+                <pre>@System.Text.Json.JsonSerializer.Serialize(entry.Call)</pre><p>@entry.Decision.Reason</p>
+                @if (entry.Decision.Result is { } result) { <pre>@result</pre> }</details>
+            }
+            @if (run.Pending is { } pending && !run.Stopped)
+            {
+                <div class="approval"><h4>Review this exact simulated message</h4><p>Recipient: @pending.Message.Recipient</p><pre>@pending.Message.Text</pre><p>Approval expires after 30 seconds and can be consumed once, within the run's 60-second deadline.</p><button disabled="@(Session.Busy || !interactive)" @onclick="() => Approve(run, pending)">Approve and send this message</button></div>
+            }
+            <h4>Simulated outbox (@run.Outbox.Length)</h4>
+            @foreach (Message message in run.Outbox) { <p><strong>@message.Recipient</strong></p><pre>@message.Text</pre> }
+            @if (run.Outbox.Length == 0) { <p class="muted">No messages executed.</p> }
+        </section>
+    }
+    </div>
+    <footer>Educational lab, not a production security platform. Same-process tool enforcement is not OS isolation. Existing CLI, durable gateway, document checks and container exercises remain available for deeper study.</footer>
+</main>
+@code {
+    private string scenarioId = "injection";
+    private string document = Scenarios.All[1].Document;
+    private string securityMode = "hardened";
+    private bool hardened { get => securityMode == "hardened"; set => securityMode = value ? "hardened" : "baseline"; }
+    private string executionMode = "scripted";
+    private bool live => executionMode == "live";
+    private int limit = 6;
+    private string error = "";
+    private bool disposed;
+    private bool interactive;
+    protected override void OnAfterRender(bool firstRender) { if (firstRender) { interactive = true; StateHasChanged(); } }
+    private Scenario Selected => Scenarios.All.Single(s => s.Id == scenarioId);
+    private void SelectScenario(ChangeEventArgs e) { scenarioId = e.Value?.ToString() ?? "injection"; document = Selected.Document; }
+    private void Refresh() { if (!disposed) { _ = InvokeAsync(StateHasChanged); } }
+    private async Task Run()
+    {
+        error = "";
+        try { await Session.RunAsync(Selected, document, hardened, live, limit, Refresh); }
+        catch (ArgumentException) { error = "Use at most 8,000 characters and a call limit between 2 and 16."; }
+    }
+    private async Task Compare()
+    {
+        if (Session.Busy) { return; }
+        Session.Reset();
+        bool selection = hardened;
+        hardened = false;
+        await Run();
+        if (Session.Runs.LastOrDefault()?.Status == "Cancelled or deadline expired") { hardened = selection; return; }
+        hardened = true;
+        await Run();
+        hardened = selection;
+    }
+    private void Approve(LabRun run, ApprovalRequest request) { error = Session.ApproveAndSend(run, request) ? "" : "Approval could not execute: review the trace, budget, and deadline."; }
+    private void Reset() { Session.Reset(); error = ""; }
+    public void Dispose() { disposed = true; Session.Cancel(); }
+}
+
+
+
+
+

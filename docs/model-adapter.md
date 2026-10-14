@@ -51,7 +51,7 @@ The Responses request uses `text.format` with `type=json_schema`, `strict=true` 
 Schema adherence does not confer permission; output is independently revalidated locally.
 Refusal, incomplete status, provider errors, unexpected tool items, duplicate properties,
 multiple messages and invalid text fail closed. Raw provider bodies/reasoning are not logged.
-Successful validated proposal JSON is captured into ignored `artifacts/model-demo/`.
+Successful validated proposal JSON is captured into ignored `artifacts/model-demo/latest/`.
 
 Before launching the gateway or worker, the demo removes the provider key from their
 environment. The worker additionally refuses startup if `OPENAI_API_KEY` is nonempty.
@@ -88,3 +88,8 @@ tool loop need a separately reviewed deployment. Desktop workers retain the desk
 OS limitations. No paid model call was run during implementation.
 
 The complete 17-project solution restores and builds normally with SDK 10.0.400 and zero warnings/errors; it passed again on 10 October 2026. All twelve offline model checks passed on Windows on 10 October and Linux on 9 October. The authenticated offline model demo passed during refactoring acceptance, including the parent key canary check. Earlier NuGet-configuration access failures were resolved for these successful builds. Remote CI for the working-tree revision and optional live API compatibility remain unverified. The isolated gateway demos do not add live provider access.
+
+
+## Presenter flow and evidence
+
+The printed flow distinguishes offline fixture input from explicit -Live ModelHost/ResponsesProposalClient calls, then shows ModelProposalSource -> worker -> independent gateway authorization. Model output grants no permissions. Open `artifacts/model-demo/latest/artifact-index.md` and its companion `artifacts/model-gateway/latest/artifact-index.md`. Offline mode uses the repository fixture and does not generate live proposals.json; successful live mode retains that validated proposal file. Gateway decisions and actual counts are in `worker-decisions.log` and `effects.json`. Offline expected effects are one read and zero publications. Each latest set is overwritten on rerun; save evidence first and review it before sharing.

@@ -1,10 +1,44 @@
-param([int]$Port = 5188, [string]$DocumentRoot, [string]$ModelProposalsFile, [int]$ExpectedDocumentReads = -1)
+param([int]$Port = 5188, [string]$DocumentRoot, [string]$ModelProposalsFile, [int]$ExpectedDocumentReads = -1, [object]$PresentationContext)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ProcessEnvironment.ps1')
 $repoRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'ArtifactRuns.ps1')
+. (Join-Path $PSScriptRoot 'DemoOutput.ps1')
 $artifactRun = Start-LabArtifactRun -Repository $repoRoot -Case $(if ($ModelProposalsFile) { 'model-gateway' } elseif ($DocumentRoot) { 'document-gateway' } else { 'gateway' })
+$gatewayPresentation = if ($PresentationContext) {
+    [pscustomobject]@{ Case=$artifactRun.CaseName; Directory=$artifactRun.DirectoryPath; Purpose='Authenticated gateway proposals, authorization decisions and measured effects.'; Step=0 }
+} else {
+    Start-LabPresentation -Case $artifactRun.CaseName -Directory $artifactRun.DirectoryPath -RunNumber $artifactRun.RunNumber
+}
+$presentation = if ($PresentationContext) { $PresentationContext } else { $gatewayPresentation }
+$demoSucceeded = $false
 try {
+    if (!$PresentationContext) {
+    Write-Host @"
+
+How this demo connects to the code
+  Run-Lab.ps1 (coordinator)
+    +--> Operator: issue credentials; API: create a scoped run
+    +--> Worker: submit proposed actions
+           |
+           v  HTTP POST /worker/proposals
+         API / WorkerEndpoints.cs: receive authenticated requests
+           |
+           v
+         Gateway.cs + DefaultPolicy.cs: authorize each proposal
+           |
+           v  Only authorized actions reach the executor
+         Tool executor: perform permitted synthetic work
+    +--> API /operator/effects: check actual reads and publications
+    +--> Stop gateway; save logs, effects.json and artifact-index.md
+
+  Worker choices: Core/Proposals/DeterministicProposalSource.cs (default)
+  Alternate input: model proposals file when supplied
+  Default: in-memory state and synthetic tools; DocumentRoot selects file-backed reads.
+  Security decisions happen in C#; PowerShell coordinates and explains the demo.
+  Rebuild Release after changing C#: this script runs the compiled DLLs.
+"@
+    }
     $gatewayDll = Join-Path $repoRoot 'src/SecureAgentLab.Api/bin/Release/net10.0/SecureAgentLab.Api.dll'
     $workerDll = Join-Path $repoRoot 'src/SecureAgentLab.Worker/bin/Release/net10.0/SecureAgentLab.Worker.dll'
     $operatorDll = Join-Path $repoRoot 'src/SecureAgentLab.Operator/bin/Release/net10.0/SecureAgentLab.Operator.dll'
@@ -25,6 +59,7 @@ try {
     }
     $gatewayLog = Join-Path $logDirectory 'gateway.log'
     $gatewayErrorLog = Join-Path $logDirectory 'gateway.err.log'
+    Write-LabStage $presentation 'Start the authenticated gateway and issue a scoped worker credential'
     $process = $null
     try {
         $env:Lab__UseInMemory = 'true'
@@ -73,9 +108,12 @@ try {
         foreach ($name in $environmentNames | Where-Object { $_ -match '^(Lab__|Audit__)' }) {
             Set-LabProcessEnvironment -Name $name -Value $null
         }
-        & dotnet $workerDll
+        Write-LabStage $presentation 'Submit worker proposals and explain authorization decisions'
+        & dotnet $workerDll | Tee-Object -FilePath (Join-Path $artifactRun.DirectoryPath 'worker-decisions.log') | ForEach-Object { Write-LabResult $_ }
         if ($LASTEXITCODE -ne 0) { throw 'Worker walkthrough failed.' }
+        Write-LabStage $presentation 'Verify actual reads and publications, then stop the gateway'
         $effects = Invoke-RestMethod -NoProxy -TimeoutSec 5 -Uri "$url/operator/effects" -Headers $headers
+        $effects | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $artifactRun.DirectoryPath 'effects.json')
         if ($effects.publications -ne 0 -or ($ExpectedDocumentReads -ge 0 -and $effects.documentReads -ne $ExpectedDocumentReads)) {
             throw 'Unexpected tool effects in the unapproved worker scenario.'
         }
@@ -86,4 +124,5 @@ try {
         foreach ($name in $environmentNames) { Set-LabProcessEnvironment -Name $name -Value $previousEnvironment[$name] }
     }
 
-} finally { $artifactRun.Dispose() }
+    $demoSucceeded = $true
+} finally { try { Complete-LabPresentation $gatewayPresentation $demoSucceeded -Quiet:([bool]$PresentationContext) } finally { $artifactRun.Dispose() } }

@@ -3,7 +3,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ProcessEnvironment.ps1')
 $repoRoot = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'ArtifactRuns.ps1')
+. (Join-Path $PSScriptRoot 'DemoOutput.ps1')
 $artifactRun = Start-LabArtifactRun -Repository $repoRoot -Case 'durable-demo'
+$presentation = Start-LabPresentation -Case $artifactRun.CaseName -Directory $artifactRun.DirectoryPath -RunNumber $artifactRun.RunNumber
+$demoSucceeded = $false
 try {
     $gatewayDll = Join-Path $repoRoot 'src/SecureAgentLab.Api/bin/Release/net10.0/SecureAgentLab.Api.dll'
     $auditDll = Join-Path $repoRoot 'src/SecureAgentLab.AuditCollector/bin/Release/net10.0/SecureAgentLab.AuditCollector.dll'
@@ -15,6 +18,7 @@ try {
     if ($GatewayPort -eq $AuditPort -or $GatewayPort -lt 1024 -or $AuditPort -lt 1024 -or $GatewayPort -gt 65535 -or $AuditPort -gt 65535) {
         throw 'Use two distinct local ports between 1024 and 65535.'
     }
+    Write-LabStage $presentation 'Prepare durable state, audit collector and authenticated gateway'
     $runRoot = $artifactRun.DirectoryPath
     [System.IO.Directory]::CreateDirectory($runRoot) | Out-Null
     $generatedNames = @('Audit__LogDirectory','Audit__CheckpointDirectory','Audit__StreamId','Audit__SigningPrivateKey',
@@ -75,6 +79,7 @@ try {
         Wait-Lab "$gatewayUrl/operator/effects" $operatorHeaders $gatewayProcess | Out-Null
         $run = Invoke-RestMethod -Method Post -Uri "$gatewayUrl/operator/runs" -Headers $operatorHeaders `
             -ContentType 'application/json' -Body '{"calls":30,"responseBytes":4096,"lifetimeSeconds":180}'
+        Write-LabStage $presentation 'Review the exact destination and content before issuing a bound publication approval'
         $proposal = @{ operation = 1; resource = 'reports/draft'; estimatedBytes = 0; content = 'Synthetic phase 3 reviewed draft.' }
         $approvalBody = @{ proposal = $proposal; lifetimeSeconds = 120 } | ConvertTo-Json -Depth 5 -Compress
         $preview = Invoke-RestMethod -Method Post -Uri "$gatewayUrl/operator/runs/$($run.runId)/approval-preview" `
@@ -87,9 +92,11 @@ try {
         $env:LAB_WORKER_CREDENTIAL = $run.workerCredential
         $env:LAB_GATEWAY_URL = $gatewayUrl
         $env:LAB_ALLOW_LOOPBACK_HTTP = 'true'
-        & dotnet $workerDll
+        Write-LabStage $presentation 'Execute scoped work and verify durable authorization effects'
+        & dotnet $workerDll | Tee-Object -FilePath (Join-Path $artifactRun.DirectoryPath 'worker-decisions.log') | ForEach-Object { Write-LabResult $_ }
         if ($LASTEXITCODE -ne 0) { throw 'Worker walkthrough failed.' }
         foreach ($name in @('LAB_WORKER_CREDENTIAL','LAB_GATEWAY_URL','LAB_ALLOW_LOOPBACK_HTTP')) { Set-LabProcessEnvironment -Name $name -Value $null }
+        Write-LabStage $presentation 'Restart the gateway, redeem approval and retry the same publication; expect exactly one effect'
         Stop-Process -Id $gatewayProcess.Id
         $gatewayProcess.WaitForExit()
         foreach ($name in $hostConfiguration.Keys) { Set-LabProcessEnvironment -Name $name -Value $hostConfiguration[$name] }
@@ -104,6 +111,7 @@ try {
             -ContentType 'application/json' -Body $publicationBody
         Write-Output "Retry with same idempotency key: $($retry.reason)"
         $effects = Invoke-RestMethod -Uri "$gatewayUrl/operator/effects" -Headers $operatorHeaders
+        $effects | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $artifactRun.DirectoryPath 'effects.json')
         if ($effects.publications -ne 1) { throw 'Unexpected publication count.' }
         Write-Output "Durable mock effects: $($effects.documentReads) reads, $($effects.publications) publication"
         Invoke-RestMethod -Method Post -Uri "$gatewayUrl/operator/stop" -Headers $operatorHeaders | Out-Null
@@ -115,4 +123,5 @@ try {
         foreach ($name in $names) { Set-LabProcessEnvironment -Name $name -Value $previous[$name] }
     }
 
-} finally { $artifactRun.Dispose() }
+    $demoSucceeded = $true
+} finally { try { Complete-LabPresentation $presentation $demoSucceeded } finally { $artifactRun.Dispose() } }

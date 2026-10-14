@@ -5,7 +5,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ProcessEnvironment.ps1')
 $repo = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'ArtifactRuns.ps1')
+. (Join-Path $PSScriptRoot 'DemoOutput.ps1')
 $artifactRun = Start-LabArtifactRun -Repository $repo -Case 'isolation'
+$presentation = Start-LabPresentation -Case $artifactRun.CaseName -Directory $artifactRun.DirectoryPath -RunNumber $artifactRun.RunNumber
+$demoSucceeded = $false
 try {
     $project = 'securelab-' + [Guid]::NewGuid().ToString('N').Substring(0,12)
     $compose = Join-Path $repo 'deploy/isolation/compose.yml'
@@ -18,6 +21,13 @@ try {
         if ($LogFile) {
             & docker compose -p $project -f $compose @Arguments 2>&1 | Tee-Object -FilePath $LogFile | Out-Host
             if ($LASTEXITCODE -ne 0) { throw "Docker Compose failed: $($Arguments[0]); see $LogFile" }
+            return
+        }
+        if ($Arguments[0] -eq 'build') {
+            $buildLog = Join-Path $artifactRun.DirectoryPath 'build.log'
+            Write-Host "Building containers; detailed output: $buildLog"
+            & docker compose -p $project -f $compose @Arguments *> $buildLog
+            if ($LASTEXITCODE -ne 0) { Get-Content -LiteralPath $buildLog -Tail 20 | Out-Host; throw "Container build failed; inspect $buildLog" }
             return
         }
         $result = & docker compose -p $project -f $compose @Arguments
@@ -85,6 +95,7 @@ try {
             }
             Write-Host "PASS run $number deployment inspection"
         }
+        Write-LabStage $presentation 'Verify two authorized reads, zero publications and an unchanged protected canary'
         $effects = ((Invoke-Compose -Arguments @('exec','-T','gateway','dotnet','/operator/SecureAgentLab.Operator.dll','isolation-effects')) -join "`n") | ConvertFrom-Json
         if ($effects.documentReads -ne 2 -or $effects.publications -ne 0 -or
             [IO.File]::ReadAllText((Join-Path $fixture 'other-run.txt')) -ne 'synthetic protected canary') {
@@ -105,4 +116,5 @@ try {
         foreach ($name in $names) { Set-LabProcessEnvironment -Name $name -Value $saved[$name] }
     }
 
-} finally { $artifactRun.Dispose() }
+    $demoSucceeded = $true
+} finally { try { Complete-LabPresentation $presentation $demoSucceeded } finally { $artifactRun.Dispose() } }

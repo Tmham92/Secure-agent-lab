@@ -4,11 +4,13 @@ Presenter materials are maintained in one consolidated `docs/Secure_Agent_Lab_Ha
 
 Verification update: the user's final local isolation output confirms both workers passed bypass checks and deployment inspection, with two reads, zero publications and an unchanged protected canary. Actions run 2 verified Linux/Windows check jobs and full solution builds; a passing isolation CI run on the final fixes still needs confirmation. Historical troubleshooting entries below preserve the earlier failures.
 
-This guide explains every implemented demonstration, its security purpose, the commands to run it, the actions it actually performs and the evidence to inspect. It is extended at the end of each implementation phase, as required by `AGENTS.md`. Last updated: 9 October 2026, isolated collaboration and comparison phases A–E.
+This guide explains every implemented demonstration, its security purpose, the commands to run it, the actions it actually performs and the evidence to inspect. It is extended at the end of each implementation phase, as required by `AGENTS.md`. Last updated: 13 October 2026. Infrastructure verification notes retain their original dates; current browser/cleanup evidence is in docs/playground-verification.md.
 
 The lab explores a simple question: **can an agent propose an unsafe action without gaining the authority to execute it?** Model instructions, retrieved documents and model output are treated as untrusted input. A trusted gateway owns permission checks, quotas, approval and execution. The demonstrations use synthetic documents and reports. They do not attack a third-party system or deploy a production service.
 
 ## 1. Start here
+
+For browser learning, run `./scripts/Run-Playground.ps1`, then open http://127.0.0.1:5080 (six basic scenarios) or /advanced (fourteen advanced exercises). [The playground guide](docs/playground.md) owns browser setup, behavior and cleanup. The commands below are the original CLI presentation path.
 
 Open PowerShell 7 in the repository and build Release binaries:
 
@@ -623,3 +625,47 @@ Purpose: prevent repeated synthetic checks/demos from accumulating storage. Each
 Run ./scripts/Test-ArtifactRetention.ps1 to verify overwrite, counters, active-run exclusion, link safety and invalid path/counter rejection. Run the rehearsal twice to observe stable paths and advancing numbers. Current evidence is retained until that case runs again; explicitly copy important failures outside artifacts first. FinishedUtc is a lifecycle timestamp, not a success verdict. Existing demos keep their security decisions/effects and process/container cleanup. The detailed paths and comparison-selection behavior are in docs/DEMO_REHEARSAL.md. This lab policy must not be used for production signed-audit retention.
 
 CI portability correction: isolation jobs install the SDK from global.json and build Release before their artifact helper loads Core. Git enforces LF text checkout through .gitattributes, matching .editorconfig on Windows and Linux. Demo commands and security behavior are unchanged. Local validation is recorded in docs/REFACTORING_RESULTS.md; a new GitHub run is required to confirm hosted results.
+## Descriptive demo output and artifact guides
+
+All ten Run-*.ps1 demo entry points now introduce the purpose, print numbered stages and end with an explicit PASS or FAILED result. A denied attack is an expected security success; gateway decisions include plain-language explanations. Container build details go to a fixed build.log; a failed build shows its final diagnostics and the full log path. Run-Lab and Run-DurableLab also retain worker-decisions.log and effects.json, which records operator-observed tool-effect counts.
+
+Commands and prerequisites remain unchanged: build Release first; use PowerShell 7 and Linux Docker for the container demos. The offline model demo requires no API key. Existing actor boundaries, synthetic effects and cleanup remain unchanged. Presentation uses the host stream so machine-readable comparison return objects remain usable by the suite script.
+
+Each demo writes artifacts/<case>/latest/artifact-index.md with the run number, completion result and relative links to existing files, describing their contents and significance. Document/model wrappers link their companion gateway guide; the comparison suite links the selected evidence sets. These indexes and logs are overwritten with the next run, under the existing retention policy. Terminal links use OSC 8 when virtual-terminal support is available; otherwise full local paths remain visible. Open the Markdown guide when the terminal does not support clickable links.
+
+The index lists filenames, not file contents. Private runtime material is identified for review before sharing; file descriptions are guidance based on names, not a new verification of contents. Lifecycle metadata and fixture existence alone do not establish a security verdict. Failed invocations show FAILED and can retain partial evidence; original exceptions still propagate. Refer to the existing per-demo sections for threat, actors, exact commands, expected effects and limitations. No live model calls or production changes are part of presenter validation.
+
+Run-Lab execution flow: the console now maps the coordinator to credential/run issuance, worker HTTP proposals, API endpoints, Gateway/DefaultPolicy authorization, permitted tool execution, effect verification and cleanup/evidence. It identifies the default proposal source, file/model variants and the Release rebuild requirement. Existing commands, security behavior and artifact retention are unchanged; the flow is explanatory output.
+## Code flows for every demo script
+
+Every Run-*.ps1 demo now prints a tailored "How this demo connects to the code" flow. Run-Lab retains its direct gateway flow; the other nine entry points use the shared Write-LabCodeFlow presenter in scripts/DemoOutput.ps1. The flows name the actual script/C# entry points, actor transitions, enforcement components, effect checks and evidence/cleanup stages. They explain where the trust boundary lies and remind presenters to rebuild host-run Release DLLs after C# changes.
+
+| Demo script | Code flow emphasized |
+|---|---|
+| Run-DocumentLab.ps1 | Synthetic fixture creation, Run-Lab DocumentRoot, scoped IDs, FileDocumentReader and DocumentExecutor |
+| Run-ModelLab.ps1 | Offline adversarial fixture or explicit live ModelHost call, ModelProposalSource, independent gateway authorization |
+| Run-DurableLab.ps1 | Separate audit collector, DurableGateway, reviewed approval, restart and idempotent publication |
+| Run-ResponseDrill.ps1 | DurableChecks --drill, Phase7Checks, runtime budgets, cancellation, recovery and measured effects |
+| Run-CollaborationLab.ps1 | DemoRunner, local broker/evaluator services, scoped messages and independent evaluation |
+| Run-IsolatedLab.ps1 | Compose isolation, worker bypass probes, relay/gateway authorization and protected canary inspection |
+| Run-IsolatedCollaborationLab.ps1 | Isolated actors, broker routes, independent answer/method evaluation and measured submissions |
+| Run-ComparisonLab.ps1 | Selected portable/container pairs, verdict validation and combined evidence |
+| Run-ContainerComparisons.ps1 | Contained unsafe/secure variants, fake-secret capture and owned-process containment |
+
+Existing prerequisites, commands, security decisions, synthetic effects, artifact paths and cleanup remain unchanged. Container demos explain that Docker builds their binaries while the host artifact helper still needs a Release build. Model output is explicitly untrusted; live mode is not invoked merely by printing its flow. Desktop collaboration is not presented as container isolation. The incident drill is a synthetic check suite, not a production shutdown command. Descriptions use the host stream, preserving comparison return objects. The existing per-demo sections remain the detailed source for triggers, expected output, effects, artifacts and limitations.
+
+Documentation synchronization on 12 October 2026: the consolidated Markdown and Word handouts now describe all ten script flows, result interpretation, per-case latest artifact guides and overwrite policy. The rehearsal guide includes presenter flow instructions; document/model adapter guides use exact latest paths. Existing runtime verification dates are unchanged. Word structure/content checks passed; visual rendering remains unverified because bundled LibreOffice is unavailable on this host.
+
+Nested presenter correction: document/model wrappers now share their stage counter with Run-Lab and print one final result/evidence summary. The child gateway still writes its own artifact-index.md, linked from the wrapper guide, while standalone Run-Lab keeps its full introduction and summary. Sequential numbering and one-result output passed for document, offline model and standalone demos; an invalid-port nested failure propagated with one FAILED result and both partial-evidence guides, followed by a successful document rerun. Security behavior and artifact retention are unchanged.
+## Browser learning labs and cleanup — 13 October 2026
+
+The browser adds six basic scenarios and fourteen advanced exercises: ten comparisons, durable/collaboration suites, and two guided Docker labs. [docs/playground.md](docs/playground.md) is the single detailed browser guide: purpose, learning goals, attacks/defenses, prerequisites, actors/trust boundaries, commands, sequence, expected/actual effects, evidence, cleanup and limitations. [Verification](docs/playground-verification.md) separates locally tested behavior from unverified provider, remote CI and new Docker execution.
+
+```powershell
+./scripts/Run-Playground.ps1
+dotnet run --project tests/SecureAgentLab.PlaygroundChecks -c Release
+```
+
+Cleanup phase/status: documentation ownership consolidated; Worker/Operator delegate to existing startup classes; duplicate inline test implementations are replaced with registrations of the retained named cases. No test-case files, runtime evidence, presenter handouts or synthetic fixtures are deleted. Case identities, CLI selectors, contracts and transaction boundaries remain unchanged. The complete check matrix is required before completion; results are appended to the verification record.
+
+Purpose: remove divergent duplicates and obsolete onboarding while retaining educational controls. No real resources or provider calls are enabled. Recovery: normal source review/Git restores code; ignored cleanup-backup copies preserve pre-consolidation harnesses and documentation locally. No bulk file deletion or broad Docker cleanup is performed. Existing artifact-retention and launcher recovery rules remain in force.

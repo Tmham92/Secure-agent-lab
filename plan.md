@@ -1,50 +1,30 @@
-# Secure Agent Lab — implementation plan
+# Secure Agent Lab — scope and plan
 
-## Goal and scope
+## Current scope — 13 October 2026
 
-Build a .NET 10 proof of concept that makes agent authorization independent of model reasoning. Start with a deterministic worker and synthetic resources. Demonstrate scoped access, approval, identity expiry, quotas, audit evidence and containment before adding a model or real tools.
+The primary entry point is the local Blazor learning lab. Original infrastructure exercises remain available for deeper study. Repository: https://github.com/Tmham92/Secure-agent-lab
 
-Repository: https://github.com/Tmham92/Secure-agent-lab
-
-Read README.md and DEMO_GUIDE.md for the threat model, demonstration commands and evidence. The milestones below retain their original acceptance requirements.
-
-## Current status as of 10 October 2026
-
-| Original phase | Implementation and verification | Remaining scope |
+| Area | Implemented scope | Verification / limits |
 |---|---|---|
-| 1 Deterministic gateway | Implemented; core checks and offline demo passed locally and in Actions run 2 | Production integration is outside this synthetic phase |
-| 2 Authenticated processes | Implemented; transport/grant checks passed locally and in Actions run 2 | Educational HMAC credentials are not a production identity provider |
-| 3 Durable approval and audit | Implemented; restart, crash, replay and tampering checks passed locally and in Actions run 2 | Local synthetic effects, not arbitrary external exactly-once transactions |
-| 4 Isolation and egress | Implemented; user supplied successful local two-worker output with two reads, zero publications and unchanged canary | Passing isolation CI on final fixes must be confirmed separately |
-| 5 Scoped document adapter | Implemented; Windows and Linux document checks passed in Actions run 2 | Synthetic local files, not a production document service |
-| 6 Optional model proposals | Implemented; full solution builds and offline model checks passed in Actions run 2 | Live provider calls remain unverified |
-| 7 Bounded writes and response | Implemented for the synthetic lab; 13 response checks passed locally and in Actions run 2 | Provider accounting uses synthetic units; multi-host coordination and production external writes are not implemented |
-| 8 Collaboration and independent verification | Synthetic broker/evaluator implemented; 18 local checks, two-service demo and isolated two-agent container demo passed locally | Broker is volatile and single-process; remote CI for these changes remains pending |
+| Basic playground | Six editable scripted scenarios, comparison, exact-message approval and optional live adapter | Scripted/browser checks; real provider behavior unverified |
+| Advanced playground | Ten real comparisons, two security-check suites and two guided Docker exercises | Actual process evidence; Docker cards are instructions |
+| Original phases 1–8 | Synthetic gateway, identity, durable approvals/audit, isolation, safe reads, proposals, runtime limits and collaboration | History in docs/REFACTORING_RESULTS.md; recent results in docs/playground-verification.md |
+| Code/documentation cleanup | Single startup implementation; harnesses use retained named cases; concise README and canonical guides | Preserve case identities and verify the complete matrix |
 
-All eight phases now have synthetic lab implementations, with the limits above. The phase 8 isolated topology now also passes local bypass/workspace checks and independent scoring. Remote CI for these changes and the real production pilot gate remain unfinished; synthetic provider accounting and local coordination do not satisfy production integration requirements. No production deployment or broad autonomy has been enabled.
+## Remaining work
 
-The before-and-after educational extension in [the consolidated handout](docs/Secure_Agent_Lab_Handout.md), phases A to E, is now implemented: 10 portable pairs plus 2 container pairs, all locally verified. A reviewable future pilot gate is prepared in [docs/PILOT_READINESS.md](docs/PILOT_READINESS.md); no real pilot is approved. The presenter handout is maintained in [docs/Secure_Agent_Lab_Handout.docx](docs/Secure_Agent_Lab_Handout.docx), with editable text alongside it. Extend DEMO_GUIDE.md and the handout when each comparison phase finishes.
+- Verify optional live-provider execution with an explicitly configured account.
+- Confirm remote CI for the current working tree separately from local checks.
+- Revalidate Docker/isolation when deployment code changes; browser cards do not imply fresh runs.
+- Keep real provider accounting, multi-host coordination and production external writes outside this synthetic lab until separately designed and reviewed. See [pilot readiness](docs/PILOT_READINESS.md).
 
-## Desktop setup and first commit
+## Documentation ownership
 
-Prerequisites: Git, the .NET 10 SDK, and your normal authenticated GitHub workflow. Visual Studio, Rider or VS Code can be used.
+README.md owns onboarding/navigation. docs/playground.md owns browser instructions. DEMO_GUIDE.md owns CLI demonstrations/evidence. docs/ARCHITECTURE.md owns component and transaction boundaries. Verification documents preserve dated observations rather than claiming current remote state.
 
-1. Clone the repository on your desktop.
-2. Place README.md and plan.md in its root.
-3. Confirm `dotnet --info` shows the .NET 10 SDK.
-4. Commit the documentation, then implement milestone 1 on a feature branch.
+## Original milestone acceptance criteria
 
-```bash
-git clone https://github.com/Tmham92/Secure-agent-lab.git
-cd Secure-agent-lab
-# Copy the downloaded README.md and plan.md into this directory.
-git add README.md plan.md
-git commit -m "Add secure agent lab background and implementation plan"
-git push -u origin main
-git switch -c feature/initial-security-lab
-```
-
-If your GitHub default branch is protected, use a branch and pull request for the documentation too. These commands assume the initial repository is empty and the default branch is main; inspect your checkout before running them.
+The specifications below are retained design/acceptance history for implemented infrastructure phases, not instructions to recreate the repository or restart milestone 1.
 
 ## Milestone 1: offline deterministic lab
 
@@ -215,12 +195,6 @@ Before real deployment, record the allowed task, resource inventory, threat mode
 
 Each implementation milestone should be a reviewable pull request containing changes, security evidence and updated limitations. Do not broaden permissions because an agent asks or a test is inconvenient.
 
-## First prompt to use on your desktop
-
-> Read README.md and plan.md in Secure-agent-lab. Implement milestone 1 only: a .NET 10 solution with Core, Demo and dependency-free executable Checks projects. Create the host-owned default-deny gateway, synthetic read/publication tools, scoped sessions, one-time exact-action approvals, expiry, atomic quotas, revocation, global stop and hash-chained audit described in the plan. Use TimeProvider for deterministic expiry tests. Add the listed security checks and GitHub Actions. Run the build, checks and demo, fix failures, and update the README to distinguish implemented controls from simulations and future work. Keep all resources synthetic and do not add model keys or live targets. Prepare a feature-branch commit for review.
-
-Then use the numbered prompts at the end of README.md to extend the project one milestone at a time.
-
 ## Maintainability upgrade R0–R8
 
 The completed maintainability work and its validation are recorded in docs/REFACTORING_RESULTS.md. It preserves the original phase 1–8 capabilities and comparison scenarios. Coding standards, responsibility folders, individual types, smaller hosts and named checks are implemented; Windows/Linux regression, compatibility and container deployment verification passed locally and are recorded in the execution results. Remote CI for the working-tree changes remains pending.
@@ -233,3 +207,13 @@ Namespace follow-up on 10 October: source and check namespaces now follow projec
 Artifact retention follow-up: cases now overwrite a single latest artifact set and store attempt numbers in run.json, backed by persistent counters under artifacts/.runs. Cross-run fixtures are reset; state recovery inside each demo remains intact. Retention regression and repeat-run validation are recorded in docs/REFACTORING_RESULTS.md.
 
 CI portability correction: isolation jobs install the SDK from global.json and build Release before their artifact helper loads Core. Git enforces LF text checkout through .gitattributes, matching .editorconfig on Windows and Linux. Demo commands and security behavior are unchanged. Local validation is recorded in docs/REFACTORING_RESULTS.md; a new GitHub run is required to confirm hosted results.
+
+Demo presentation: all Run-*.ps1 entry points now show purpose, numbered stages, explained decisions and explicit completion results. Each latest artifact set includes artifact-index.md with file links and descriptions; container builds retain build.log. Commands and retention remain unchanged. See DEMO_GUIDE.md and docs/DEMO_REHEARSAL.md for details.
+
+Run-Lab execution flow: the console now maps the coordinator to credential/run issuance, worker HTTP proposals, API endpoints, Gateway/DefaultPolicy authorization, permitted tool execution, effect verification and cleanup/evidence. It identifies the default proposal source, file/model variants and the Release rebuild requirement. Existing commands, security behavior and artifact retention are unchanged; the flow is explanatory output.
+
+All demo entry points now print a tailored code execution flow, showing their script/C# components, trust boundaries, effect checks and evidence stages. Shared descriptions live in scripts/DemoOutput.ps1; Run-Lab keeps its direct gateway flow. See DEMO_GUIDE.md for the per-script mapping. Commands and runtime behavior remain unchanged.
+
+Documentation synchronization on 12 October 2026: the consolidated Markdown and Word handouts now describe all ten script flows, result interpretation, per-case latest artifact guides and overwrite policy. The rehearsal guide includes presenter flow instructions; document/model adapter guides use exact latest paths. Existing runtime verification dates are unchanged. Word structure/content checks passed; visual rendering remains unverified because bundled LibreOffice is unavailable on this host.
+
+Nested presenter correction: document/model wrappers now share their stage counter with Run-Lab and print one final result/evidence summary. The child gateway still writes its own artifact-index.md, linked from the wrapper guide, while standalone Run-Lab keeps its full introduction and summary. Sequential numbering and one-result output passed for document, offline model and standalone demos; an invalid-port nested failure propagated with one FAILED result and both partial-evidence guides, followed by a successful document rerun. Security behavior and artifact retention are unchanged.

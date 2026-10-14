@@ -3,9 +3,13 @@ param([int]$Port = 5193, [switch]$Live, [string]$Model)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'ArtifactRuns.ps1')
+. (Join-Path $PSScriptRoot 'DemoOutput.ps1')
 $artifactRun = Start-LabArtifactRun -Repository $repo -Case 'model-demo'
+$presentation = Start-LabPresentation -Case $artifactRun.CaseName -Directory $artifactRun.DirectoryPath -RunNumber $artifactRun.RunNumber
+$demoSucceeded = $false
 try {
     $proposalFile = Join-Path $repo 'fixtures/model/adversarial-proposals.json'
+    Write-LabStage $presentation 'Prepare untrusted proposals (offline fixture by default; live mode calls the selected model)'
     if ($Live) {
         if (!$Model -or !$env:OPENAI_API_KEY) { throw 'Live mode requires -Model and host OPENAI_API_KEY. No credentials are needed in offline mode.' }
         $dll = Join-Path $repo 'src/SecureAgentLab.ModelHost/bin/Release/net10.0/SecureAgentLab.ModelHost.dll'
@@ -24,6 +28,8 @@ try {
         Write-Host 'One live model response validated. Submitting through the authenticated gateway.'
     }
     else { Write-Host 'Offline adversarial-output fixture: no model call or API key required.' }
-    & (Join-Path $PSScriptRoot 'Run-Lab.ps1') -Port $Port -ModelProposalsFile $proposalFile -ExpectedDocumentReads $(if ($Live) { -1 } else { 1 })
+    Write-LabStage $presentation 'Submit untrusted requests through the authenticated gateway; review the nested gateway evidence'
+    & (Join-Path $PSScriptRoot 'Run-Lab.ps1') -PresentationContext $presentation -Port $Port -ModelProposalsFile $proposalFile -ExpectedDocumentReads $(if ($Live) { -1 } else { 1 })
 
-} finally { $artifactRun.Dispose() }
+    $demoSucceeded = $true
+} finally { try { Complete-LabPresentation $presentation $demoSucceeded } finally { $artifactRun.Dispose() } }

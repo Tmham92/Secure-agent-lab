@@ -5,6 +5,7 @@
     <Project Path="src/SecureAgentLab.ModelHost/SecureAgentLab.ModelHost.csproj" />
     <Project Path="src/SecureAgentLab.Durable/SecureAgentLab.Durable.csproj" />
     <Project Path="src/SecureAgentLab.AuditCollector/SecureAgentLab.AuditCollector.csproj" />
+    <Project Path="src/SecureAgentLab.Playground/SecureAgentLab.Playground.csproj" />
     <Project Path="src/SecureAgentLab.Transport/SecureAgentLab.Transport.csproj" />
     <Project Path="src/SecureAgentLab.Api/SecureAgentLab.Api.csproj" />
     <Project Path="src/SecureAgentLab.Worker/SecureAgentLab.Worker.csproj" />
@@ -17,6 +18,7 @@
     <Project Path="tests/SecureAgentLab.ModelChecks/SecureAgentLab.ModelChecks.csproj" />
     <Project Path="tests/SecureAgentLab.DocumentChecks/SecureAgentLab.DocumentChecks.csproj" />
     <Project Path="tests/SecureAgentLab.DurableChecks/SecureAgentLab.DurableChecks.csproj" />
+    <Project Path="tests/SecureAgentLab.PlaygroundChecks/SecureAgentLab.PlaygroundChecks.csproj" />
     <Project Path="tests/SecureAgentLab.TransportChecks/SecureAgentLab.TransportChecks.csproj" />
     <Project Path="tests/SecureAgentLab.Checks/SecureAgentLab.Checks.csproj" />
   </Folder>

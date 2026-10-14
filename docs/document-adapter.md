@@ -14,7 +14,7 @@ pwsh -File scripts/Run-DocumentLab.ps1
 dotnet run --project tests/SecureAgentLab.DocumentChecks -c Release --no-build
 ```
 
-The demo generates fresh fixtures under ignored `artifacts/document-demo/`, launches
+The demo generates fresh fixtures under ignored `artifacts/document-demo/latest/`, launches
 the authenticated gateway with a host-only document root, and runs the separate worker.
 It shows one file-backed read, denied external/messaging/permission requests, publication
 requiring approval, and one read / zero publication effects. `-Port 5193` changes the
@@ -85,3 +85,8 @@ Release build: zero warnings/errors. Windows: **14/14 document checks** and the 
 file-backed demo passed. Existing 17 offline, 16 transport and 20 durable checks are
 regression requirements. CI now runs the document harness on both Linux and Windows.
 Linux adds final-file symlink and FIFO probes (**16 checks total**); all sixteen passed locally in the refactoring acceptance run on 9 October 2026. Windows document checks passed again on 10 October. The full isolation demo also passed locally; its deployment boundaries and remaining remote CI gate are documented separately in deploy/isolation/README.md.
+
+
+## Presenter flow and evidence
+
+The printed flow follows New-DocumentFixtures -> Run-Lab -DocumentRoot -> gateway policy -> FileDocumentReader/DocumentExecutor. The host owns the root and resolves scoped IDs. Open `artifacts/document-demo/latest/artifact-index.md` for fixture descriptions and its companion link to `artifacts/document-gateway/latest/artifact-index.md`. Gateway evidence includes `worker-decisions.log` and `effects.json`; expect one read and zero publications. Each case overwrites its latest set on rerun; `run.json` identifies the attempt but timestamps alone do not prove success.

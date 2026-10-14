@@ -15,7 +15,8 @@
 | Operator | Host-only credential command entry point |
 | Demo | Offline deterministic walkthrough |
 | Comparisons | Fixed paired scenarios, vulnerable fixtures, safe evidence and disposable container roles |
-| Six Checks projects | Named cases, assertions/fixtures and executable check registration; not production dependencies |
+| Playground | Loopback-only Blazor UI, isolated basic runs and bounded allowlisted child-process advanced execution |
+| Seven Checks projects | Named cases, assertions/fixtures and executable check registration; not production dependencies |
 
 ## Transaction ownership
 
@@ -38,3 +39,9 @@ A private compatibility probe uses pre-refactor assemblies to create state, chec
 ## Intentional limits
 
 The code remains a synthetic single-host lab. Durable local coordination is not a distributed store. Broker state is volatile. Refactoring does not grant real resources, connect a live model, enable external writes or approve a production pilot. Large remaining coordinators require transaction-level review rather than arbitrary size-driven fragmentation.
+
+## Learning UI and ownership
+
+Basic Blazor runs own circuit-scoped synthetic files, approvals, traces and local-only outboxes. AdvancedProcessRunner starts fixed catalog executables with an OS/runtime environment allowlist, bounded time/output and owned-child termination. Comparisons stay outside the web host dependency graph. Docker cards retain existing launcher lifecycle management.
+
+Executable harnesses register the retained named cases instead of duplicating their bodies. Worker and Operator delegate to their existing startup classes. Shared assertions, fixtures, transaction locks and serialized contracts retain their existing ownership. Historical verification belongs in verification records, not onboarding.

@@ -2,7 +2,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'ProcessEnvironment.ps1')
 $repo = Split-Path $PSScriptRoot -Parent
 . (Join-Path $PSScriptRoot 'ArtifactRuns.ps1')
+. (Join-Path $PSScriptRoot 'DemoOutput.ps1')
 $artifactRun = Start-LabArtifactRun -Repository $repo -Case 'phase8-isolated'
+$presentation = Start-LabPresentation -Case $artifactRun.CaseName -Directory $artifactRun.DirectoryPath -RunNumber $artifactRun.RunNumber
+$demoSucceeded = $false
 try {
     $project = 'collab-' + [Guid]::NewGuid().ToString('N').Substring(0,12)
     $compose = Join-Path $repo 'deploy/collaboration/compose.yml'
@@ -10,6 +13,13 @@ try {
     $names = @('COLLAB_BROKER_KEY','COLLAB_EVAL_KEY','COLLAB_PRIVATE_KEY','COLLAB_PUBLIC_KEY','COLLAB_EVIDENCE','COLLAB_RESEARCHER_TOKEN','COLLAB_WRITER_TOKEN','COLLAB_EVAL_OPERATOR')
     $saved = @{}; foreach ($name in $names) { $saved[$name] = [Environment]::GetEnvironmentVariable($name) }
     function Compose([string[]]$Arguments) {
+        if ($Arguments[0] -eq 'build') {
+            $buildLog = Join-Path $artifactRun.DirectoryPath 'build.log'
+            Write-Host "Building containers; detailed output: $buildLog"
+            & docker compose -p $project -f $compose @Arguments *> $buildLog
+            if ($LASTEXITCODE -ne 0) { Get-Content -LiteralPath $buildLog -Tail 20 | Out-Host; throw "Container build failed; inspect $buildLog" }
+            return
+        }
         $result = & docker compose -p $project -f $compose @Arguments
         if ($LASTEXITCODE -ne 0) { throw "Collaboration Compose failed: $($Arguments[0])" }
         return $result
@@ -34,6 +44,7 @@ try {
         $env:COLLAB_RESEARCHER_TOKEN = $issued.Researcher; $env:COLLAB_WRITER_TOKEN = $issued.Writer
         $env:COLLAB_EVAL_OPERATOR = (Compose @('exec','-T','evaluator','dotnet','SecureAgentLab.Collaboration.dll','--container-supervisor','eval-token')) -join ''
         Compose @('up','-d','researcher','writer') | Out-Host
+        Write-LabStage $presentation 'Run scoped agent messages and independent answer/method verification'
         foreach ($actor in @('researcher','writer')) {
             Compose @('exec','-T',$actor,'dotnet','SecureAgentLab.Collaboration.dll','--container-agent','probes') | Tee-Object -FilePath (Join-Path $evidence "$actor-probes.log") | Out-Host
             $id = (Compose @('ps','-q',$actor)) -join ''
@@ -62,4 +73,5 @@ try {
         if ($cleanup -ne 0) { throw "Cleanup failed for owned project $project" }
     }
 
-} finally { $artifactRun.Dispose() }
+    $demoSucceeded = $true
+} finally { try { Complete-LabPresentation $presentation $demoSucceeded } finally { $artifactRun.Dispose() } }

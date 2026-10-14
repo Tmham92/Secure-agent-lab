@@ -14,6 +14,15 @@ internal static class ComparisonsApplication
             return;
         }
 
+        bool playground = args.FirstOrDefault() == "--playground";
+        if (playground)
+        {
+            if (args.Length != 2 || !PortableScenarios.Names.Contains(args[1]))
+            {
+                throw new ArgumentException("Choose a fixed playground comparison.");
+            }
+            args = [args[1]];
+        }
         string selected = args.Length == 0 ? "portable" : args[0];
         if (args.Length > 1 || (selected != "portable" && !PortableScenarios.Names.Contains(selected)))
         {
@@ -31,7 +40,7 @@ internal static class ComparisonsApplication
             throw new InvalidOperationException("Repository build required");
         }
 
-        using var artifactRun = global::SecureAgentLab.Core.Diagnostics.ArtifactRun.Start(repo.FullName, "comparisons/portable");
+        using var artifactRun = global::SecureAgentLab.Core.Diagnostics.ArtifactRun.Start(repo.FullName, playground ? "playground/advanced/" + selected : "comparisons/portable");
         string root = artifactRun.DirectoryPath;
         Directory.CreateDirectory(root);
         var results = new List<Comparison>();
@@ -43,6 +52,10 @@ internal static class ComparisonsApplication
         }
 
         ComparisonEvidence.Save(root, results);
+        if (playground)
+        {
+            Console.WriteLine("PLAYGROUND_RESULT:" + System.Text.Json.JsonSerializer.Serialize(results.Single()));
+        }
         Console.WriteLine($"Comparison pairs: {results.Count}/{results.Count} passed. Evidence: {root}");
     }
 }
